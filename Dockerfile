@@ -1,10 +1,13 @@
 # Utilizar una imagen base de PHP
 FROM php:8.2-fpm
 
+# Instalar dependencias necesarias (Git y unzip)
+RUN apt-get update && apt-get install -y git unzip
+
 # Instalar Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Instalar dependencias del proyecto
+# Instalar las dependencias del proyecto
 WORKDIR /var/www/html
 COPY . .
 
