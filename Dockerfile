@@ -1,6 +1,10 @@
 # Utilizar una imagen base de PHP
 FROM php:8.2-fpm
 
+RUN curl -sS https://get.symfony.com/cli/installer | bash
+RUN mv /root/.symfony*/bin/symfony /usr/local/bin/symfony
+
+
 # Instalar dependencias necesarias (Git y unzip)
 RUN apt-get update && apt-get install -y git unzip
 
