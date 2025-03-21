@@ -16,7 +16,7 @@ class ApiController extends AbstractController
             'status' => 'success',
             'data' => [
                 'version' => '1.0',
-                'author' => 'Tu nombre',
+                'author' => 'Tirmo05',
             ],
         ];
 
