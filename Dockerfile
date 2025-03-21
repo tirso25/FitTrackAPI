@@ -18,6 +18,9 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 WORKDIR /var/www/html
 COPY . .
 
+# Cambiar los permisos del directorio assets
+RUN mkdir -p /var/www/html/assets && chmod -R 777 /var/www/html/assets
+
 # Cambiar a un usuario no root para evitar problemas de permisos
 USER symfony
 
