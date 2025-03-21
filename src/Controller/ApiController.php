@@ -12,12 +12,7 @@ class ApiController extends AbstractController
     public function index(): JsonResponse
     {
         $data = [
-            'message' => '¡Bienvenido a mi API REST básica!',
-            'status' => 'success',
-            'data' => [
-                'version' => '1.0',
-                'author' => 'Tirmo05',
-            ],
+            'message' => 'API de FitTrack',
         ];
 
         return $this->json($data);
