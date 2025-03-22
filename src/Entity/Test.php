@@ -1,10 +1,12 @@
 <?php
 
+// src/Entity/Test.php
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
+#[ORM\Table(name: 'test')]
 class Test
 {
     #[ORM\Id]
