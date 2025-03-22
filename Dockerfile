@@ -4,8 +4,11 @@ FROM php:8.2-fpm
 # Crear un usuario y grupo para el contenedor
 RUN groupadd -g 1000 symfony && useradd -u 1000 -g symfony -m symfony
 
-# Instalar las dependencias necesarias (Git y unzip)
-RUN apt-get update && apt-get install -y git unzip
+# Instalar las dependencias necesarias (Git, unzip y libpq para PostgreSQL)
+RUN apt-get update && apt-get install -y git unzip libpq-dev postgresql-client
+
+# Instalar extensiones de PHP para PostgreSQL
+RUN docker-php-ext-install pdo pdo_pgsql
 
 # Instalar Symfony CLI
 RUN curl -sS https://get.symfony.com/cli/installer | bash
