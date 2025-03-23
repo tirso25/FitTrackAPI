@@ -37,8 +37,8 @@ class UsersController extends AbstractController
         return $this->json($data, Response::HTTP_OK);
     }
 
-    #[Route('/logIn', 'api_logIn', methods: ['POST'])]
-    public function logIn(EntityManagerInterface $entityManager, Request $request): JsonResponse
+    #[Route('/singUp', 'api_singUp', methods: ['POST'])]
+    public function singUp(EntityManagerInterface $entityManager, Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
 
