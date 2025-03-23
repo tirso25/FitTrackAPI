@@ -48,7 +48,7 @@ class UsersController extends AbstractController
         $repeatPassword = $data['repeatPassword'];
 
 
-        if (empty($email) || empty($username) || empty($password)) {
+        if (empty($email) || empty($username) || empty($password) || empty($repeatPassword)) {
             return $this->json(['error' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
         }
 
@@ -61,7 +61,7 @@ class UsersController extends AbstractController
         }
 
         if ($password !== $repeatPassword) {
-            return $this->json(['error' => `Passwords don't match`]);
+            return $this->json(['error' => 'Passwords dont match'], Response::HTTP_BAD_REQUEST);
         }
 
         $newUser = new Users();
@@ -77,12 +77,12 @@ class UsersController extends AbstractController
         return $this->json(['succes' => 'User successfully created'], Response::HTTP_CREATED);
     }
 
-    #[Route('/singIn', 'api_singIn', methods: ['POST'])]
-    public function singIn(EntityManagerInterface $entityManager, Request $request): JsonResponse
-    {
-        $data = json_decode($request->getContent(), true);
+    // #[Route('/singIn', 'api_singIn', methods: ['POST'])]
+    // public function singIn(EntityManagerInterface $entityManager, Request $request): JsonResponse
+    // {
+    //     $data = json_decode($request->getContent(), true);
 
-        $email = Users::validate($data['email']);
-        $password = Users::validate($data['password']);
-    }
+    //     $email = Users::validate($data['email']);
+    //     $password = Users::validate($data['password']);
+    // }
 }
