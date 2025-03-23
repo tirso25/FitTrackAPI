@@ -63,6 +63,7 @@ class UsersController extends AbstractController
         $newUser->setEmail($email);
         $newUser->setUsername($username);
         $newUser->setPassword(Users::hashPassword($password));
+        $newUser->setRole('USER');
 
         $entityManager->persist($newUser);
         $entityManager->flush();
