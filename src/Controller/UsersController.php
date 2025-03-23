@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Users;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -29,6 +30,43 @@ class UsersController extends AbstractController
             ];
         }
 
+        if (empty($data)) {
+            return $this->json(['alert' => 'No users found'], Response::HTTP_OK);
+        }
+
         return $this->json($data, Response::HTTP_OK);
+    }
+
+    #[Route('/logIn', 'api_logIn', methods: ['POST'])]
+    public function logIn(EntityManagerInterface $entityManager, Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        $email = Users::validate($data['email']);
+        $username = Users::validate($data['username']);
+        $password = $data['password'];
+
+        if (empty($email) || empty($username) || empty($password)) {
+            return $this->json(['error' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return $this->json(['error' => 'Invalid email format'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (Users::userExisting($email, $username, $entityManager)) {
+            return $this->json(['error' => 'User already exists', Response::HTTP_BAD_REQUEST]);
+        }
+
+        $newUser = new Users();
+
+        $newUser->setEmail($email);
+        $newUser->setUsername($username);
+        $newUser->setPassword(Users::hashPassword($password));
+
+        $entityManager->persist($newUser);
+        $entityManager->flush();
+
+        return $this->json(['succes' => 'User successfully created'], Response::HTTP_CREATED);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -83,5 +84,33 @@ class Users
         $this->role = $role;
 
         return $this;
+    }
+
+    public static function validate($data)
+    {
+        return htmlspecialchars(stripslashes(trim($data)), ENT_QUOTES, 'UTF-8');
+    }
+
+    public static function hashPassword($password)
+    {
+        $options = [
+            'cost' => 13,
+        ];
+
+        return password_hash($password, PASSWORD_BCRYPT, $options);
+    }
+
+    public static function passwordVerify($userPassword, $hashedPawword)
+    {
+        return password_verify($userPassword, $hashedPawword);
+    }
+
+    public static function userExisting($email, $username, EntityManagerInterface $entityManager)
+    {
+        $emailExisting = $entityManager->getRepository(Users::class)->findOneBy(['email' => $email]);
+        $usernameExisting = $entityManager->getRepository(Users::class)->findOneBy(['username' => $username]);
+
+        // Si alguno de los 2 no es null significa que el usuario ya existe
+        return $emailExisting !== null || $usernameExisting !== null;
     }
 }
