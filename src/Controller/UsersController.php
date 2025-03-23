@@ -45,6 +45,8 @@ class UsersController extends AbstractController
         $email = Users::validate($data['email']);
         $username = Users::validate($data['username']);
         $password = $data['password'];
+        $repeatPassword = Users::validate($data['repeatPassword']);
+
 
         if (empty($email) || empty($username) || empty($password)) {
             return $this->json(['error' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
@@ -58,6 +60,10 @@ class UsersController extends AbstractController
             return $this->json(['error' => 'User already exists', Response::HTTP_BAD_REQUEST]);
         }
 
+        if ($password !== $repeatPassword) {
+            return $this->json(['error' => `Passwords don't match`]);
+        }
+
         $newUser = new Users();
 
         $newUser->setEmail($email);
@@ -69,5 +75,14 @@ class UsersController extends AbstractController
         $entityManager->flush();
 
         return $this->json(['succes' => 'User successfully created'], Response::HTTP_CREATED);
+    }
+
+    #[Route('/singIn', 'api_singIn', methods: ['POST'])]
+    public function singIn(EntityManagerInterface $entityManager, Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        $email = Users::validate($data['email']);
+        $password = Users::validate($data['password']);
     }
 }
