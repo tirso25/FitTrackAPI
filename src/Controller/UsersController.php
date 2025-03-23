@@ -45,7 +45,7 @@ class UsersController extends AbstractController
         $email = Users::validate($data['email']);
         $username = Users::validate($data['username']);
         $password = $data['password'];
-        $repeatPassword = Users::validate($data['repeatPassword']);
+        $repeatPassword = $data['repeatPassword'];
 
 
         if (empty($email) || empty($username) || empty($password)) {
