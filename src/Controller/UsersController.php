@@ -95,4 +95,20 @@ class UsersController extends AbstractController
 
         return $this->json(['succes' => 'Session successfully started'], Response::HTTP_OK);
     }
+
+    #[Route('/deleteUser/{id<\d+>}', 'api_deleteUser', methods: ['GET'])]
+    public function deleteUser(EntityManagerInterface $entityManager, $id): JsonResponse
+    {
+        $delUser = $entityManager->find(Users::class, $id);
+
+        if (!isset($delUser)) {
+            return $this->json(['error' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $entityManager->remove($delUser);
+        $entityManager->flush();
+
+
+        return $this->json(['succes' => 'User successfully deleted'], Response::HTTP_CREATED);
+    }
 }
