@@ -82,7 +82,7 @@ class UsersController extends AbstractController
     // {
     //     $data = json_decode($request->getContent(), true);
 
-    //     $email = Users::validate($data['email']);
+    //     $emailUsername = Users::validate($data['emailUsername']);
     //     $password = Users::validate($data['password']);
     // }
 }

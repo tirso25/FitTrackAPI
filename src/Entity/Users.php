@@ -2,7 +2,6 @@
 
 namespace App\Entity;
 
-use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -105,12 +104,24 @@ class Users
         return password_verify($userPassword, $hashedPawword);
     }
 
-    public static function userExisting($email, $username, EntityManagerInterface $entityManager)
-    {
-        $emailExisting = $entityManager->getRepository(Users::class)->findOneBy(['email' => $email]);
-        $usernameExisting = $entityManager->getRepository(Users::class)->findOneBy(['username' => $username]);
+    // public static function userExisting($email, $username, $entityManager)
+    // {
+    //     $emailExisting = $entityManager->getRepository(Users::class)->findOneBy(['email' => $email]);
+    //     $usernameExisting = $entityManager->getRepository(Users::class)->findOneBy(['username' => $username]);
 
-        // Si alguno de los 2 no es null significa que el usuario ya existe
-        return $emailExisting !== null || $usernameExisting !== null;
+    //     // Si alguno de los 2 no es null significa que el usuario ya existe
+    //     return $emailExisting !== null || $usernameExisting !== null;
+    // }
+
+    public static function userExisting($email, $username, $entityManager)
+    {
+        $query = $entityManager->createQuery(
+            'SELECT u FROM App\Entity\Users u WHERE u.email = :email OR u.username = :username'
+        )->setParameters([
+            'email' => $email,
+            'username' => $username
+        ]);
+
+        return $query->getOneOrNullResult() !== null;
     }
 }
