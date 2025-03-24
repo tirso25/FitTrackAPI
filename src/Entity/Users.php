@@ -121,7 +121,7 @@ class Users
             'email' => $email,
             'username' => $username
         ]);
-
+        //Me retorna un boolean true en el caso de que si se encuentre un usuario y un false cuando es null(no existe el usuario)
         return $query->getOneOrNullResult() !== null;
     }
 

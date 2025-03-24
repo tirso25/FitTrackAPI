@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Users;
+use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -110,5 +111,36 @@ class UsersController extends AbstractController
 
 
         return $this->json(['succes' => 'User successfully deleted'], Response::HTTP_CREATED);
+    }
+
+    #[Route('/modifyUser/{id<\d+>}', 'api_modifyUser', methods: ['POST'])]
+    public function modifyUser(EntityManagerInterface $entityManager, Request $request, $id): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        $username = Users::validate($data['username']);
+        $password = Users::validate($data['password']);
+
+        if (empty($username) || empty($password)) {
+            return $this->json(['error' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $user = $entityManager->find(Users::class, $id);
+
+        if ($id != $user->getId()) {
+            return $this->json(['error' => 'The user does match'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!$user) {
+            return $this->json(['error' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $user->setUsername($username);
+        $user->setPassword($password);
+
+        $entityManager->persist($user);
+        $entityManager->flush();
+
+        return $this->json(['succes' => 'User successfully updated'], Response::HTTP_CREATED);
     }
 }
