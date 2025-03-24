@@ -124,4 +124,22 @@ class Users
 
         return $query->getOneOrNullResult() !== null;
     }
+
+    public static function passwordsMatch($email, $password, $entityManager)
+    {
+        if (Users::userExisting($email, $email, $entityManager)) {
+            $query = $entityManager->createQuery(
+                'SELECT u.password FROM App\Entity\Users u WHERE u.email = :email OR u.username = :username'
+            )->setParameters([
+                'email' => $email,
+                'username' => $email
+            ]);
+
+            $hashedPassword = $query->getSingleScalarResult();
+
+            return Users::passwordVerify($password, $hashedPassword);
+        }
+
+        return false;
+    }
 }

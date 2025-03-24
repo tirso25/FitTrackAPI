@@ -77,12 +77,22 @@ class UsersController extends AbstractController
         return $this->json(['succes' => 'User successfully created'], Response::HTTP_CREATED);
     }
 
-    // #[Route('/singIn', 'api_singIn', methods: ['POST'])]
-    // public function singIn(EntityManagerInterface $entityManager, Request $request): JsonResponse
-    // {
-    //     $data = json_decode($request->getContent(), true);
+    #[Route('/singIn', 'api_singIn', methods: ['POST'])]
+    public function singIn(EntityManagerInterface $entityManager, Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
 
-    //     $emailUsername = Users::validate($data['emailUsername']);
-    //     $password = Users::validate($data['password']);
-    // }
+        $emailUsername = Users::validate($data['emailUsername']);
+        $password = Users::validate($data['password']);
+
+        if (empty($emailUsername) || empty($password)) {
+            return $this->json(['error' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!Users::passwordsMatch($emailUsername, $password, $entityManager)) {
+            return $this->json(['error' => 'User or password doesnt match'], Response::HTTP_BAD_REQUEST);
+        }
+
+        return $this->json(['succes' => 'Session successfully started'], Response::HTTP_OK);
+    }
 }
