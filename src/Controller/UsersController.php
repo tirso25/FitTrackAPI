@@ -37,6 +37,26 @@ class UsersController extends AbstractController
         return $this->json($data, Response::HTTP_OK);
     }
 
+    #[Route('/seeOneUser/{id<\d+>}', 'api_seeOneUser', methods: ['GET'])]
+    public function seeOneUser(EntityManagerInterface $entityManager, $id): JsonResponse
+    {
+        $user = $entityManager->find(Users::class, $id);
+
+        if (!$user) {
+            return $this->json(['error' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $data[] = [
+            'id_usr' => $user->getIdUsr(),
+            'email' => $user->getEmail(),
+            'username' => $user->getUsername(),
+            'password' => $user->getPassword(),
+            'role' => $user->getRole()
+        ];
+
+        return $this->json($data, Response::HTTP_OK);
+    }
+
     #[Route('/singUp', 'api_singUp', methods: ['POST'])]
     public function singUp(EntityManagerInterface $entityManager, Request $request): JsonResponse
     {
