@@ -74,7 +74,7 @@ class UsersController extends AbstractController
         $entityManager->persist($newUser);
         $entityManager->flush();
 
-        return $this->json(['succes' => 'User successfully created'], Response::HTTP_CREATED);
+        return $this->json(['success' => 'User successfully created'], Response::HTTP_CREATED);
     }
 
     #[Route('/singIn', 'api_singIn', methods: ['POST'])]
@@ -93,7 +93,7 @@ class UsersController extends AbstractController
             return $this->json(['error' => 'User or password doesnt match'], Response::HTTP_BAD_REQUEST);
         }
 
-        return $this->json(['succes' => 'Session successfully started'], Response::HTTP_OK);
+        return $this->json(['success' => 'Session successfully started'], Response::HTTP_OK);
     }
 
     #[Route('/deleteUser/{id<\d+>}', 'api_deleteUser', methods: ['GET'])]
@@ -109,7 +109,7 @@ class UsersController extends AbstractController
         $entityManager->flush();
 
 
-        return $this->json(['succes' => 'User successfully deleted'], Response::HTTP_CREATED);
+        return $this->json(['success' => 'User successfully deleted'], Response::HTTP_CREATED);
     }
 
     #[Route('/modifyUser/{id<\d+>}', 'api_modifyUser', methods: ['PUT'])]
@@ -140,6 +140,6 @@ class UsersController extends AbstractController
         $entityManager->persist($user);
         $entityManager->flush();
 
-        return $this->json(['succes' => 'User successfully updated'], Response::HTTP_CREATED);
+        return $this->json(['success' => 'User successfully updated'], Response::HTTP_CREATED);
     }
 }
