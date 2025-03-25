@@ -116,7 +116,7 @@ class UsersController extends AbstractController
         return $this->json(['success' => 'Session successfully started'], Response::HTTP_OK);
     }
 
-    #[Route('/deleteUser/{id<\d+>}', 'api_deleteUser', methods: ['GET'])]
+    #[Route('/deleteUser/{id<\d+>}', 'api_deleteUser', methods: ['DELETE', 'GET'])]
     public function deleteUser(EntityManagerInterface $entityManager, $id): JsonResponse
     {
         $delUser = $entityManager->find(Users::class, $id);
@@ -132,7 +132,7 @@ class UsersController extends AbstractController
         return $this->json(['success' => 'User successfully deleted'], Response::HTTP_CREATED);
     }
 
-    #[Route('/modifyUser/{id<\d+>}', 'api_modifyUser', methods: ['PUT'])]
+    #[Route('/modifyUser/{id<\d+>}', 'api_modifyUser', methods: ['PUT', 'POST'])]
     public function modifyUser(EntityManagerInterface $entityManager, Request $request, $id): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -141,7 +141,7 @@ class UsersController extends AbstractController
         $password = Users::validate($data['password']);
         $role = Users::validate($data['role']);
 
-        if (empty($username) || empty($password)) {
+        if (empty($username)) {
             return $this->json(['error' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
         }
 
@@ -153,10 +153,12 @@ class UsersController extends AbstractController
             return $this->json(['error' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
         }
 
-        $hashedPassword = uSERS::hashPassword($password);
+        $hashedPassword = Users::hashPassword($password);
 
         $user->setUsername($username);
-        $user->setPassword($hashedPassword);
+        if (!empty($password)) {
+            $user->setPassword($hashedPassword);
+        }
 
         if (!empty($role)) {
             if (!in_array($role, ['ADMIN', 'USER', 'COACH'])) {
