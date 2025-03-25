@@ -3,7 +3,6 @@
 namespace App\Controller;
 
 use App\Entity\Users;
-use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -113,7 +112,7 @@ class UsersController extends AbstractController
         return $this->json(['succes' => 'User successfully deleted'], Response::HTTP_CREATED);
     }
 
-    #[Route('/modifyUser/{id<\d+>}', 'api_modifyUser', methods: ['POST'])]
+    #[Route('/modifyUser/{id<\d+>}', 'api_modifyUser', methods: ['PUT'])]
     public function modifyUser(EntityManagerInterface $entityManager, Request $request, $id): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -127,16 +126,16 @@ class UsersController extends AbstractController
 
         $user = $entityManager->find(Users::class, $id);
 
-        if ($id != $user->getId()) {
-            return $this->json(['error' => 'The user does match'], Response::HTTP_BAD_REQUEST);
-        }
+        //!VER TEMA COMPROBAR QUE EL ID QUE SE PASA POR LA URL SEA EL MISMO QUE EL DEL USUARIO QUE LO SOLICITA
 
         if (!$user) {
             return $this->json(['error' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
         }
 
+        $hashedPassword = uSERS::hashPassword($password);
+
         $user->setUsername($username);
-        $user->setPassword($password);
+        $user->setPassword($hashedPassword);
 
         $entityManager->persist($user);
         $entityManager->flush();
