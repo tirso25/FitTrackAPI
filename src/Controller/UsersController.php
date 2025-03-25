@@ -119,6 +119,7 @@ class UsersController extends AbstractController
 
         $username = Users::validate($data['username']);
         $password = Users::validate($data['password']);
+        $role = Users::validate($data['role']);
 
         if (empty($username) || empty($password)) {
             return $this->json(['error' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
@@ -126,7 +127,7 @@ class UsersController extends AbstractController
 
         $user = $entityManager->find(Users::class, $id);
 
-        //!VER TEMA COMPROBAR QUE EL ID QUE SE PASA POR LA URL SEA EL MISMO QUE EL DEL USUARIO QUE LO SOLICITA
+        //!VER TEMA COMPROBAR QUE EL ID QUE SE PASA POR LA URL SEA EL MISMO QUE EL DEL USUARIO QUE LO SOLICITA SOLO PARA LOS USUARIOS NO SE PUEDE HACER CON EL ADMIN YA QUE EL PUEDE MODIFICAR LOS PERFILES DE LOS USUARIOS POR EJEMPLO PARA MODIFICAR EL ROLE
 
         if (!$user) {
             return $this->json(['error' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
@@ -136,6 +137,13 @@ class UsersController extends AbstractController
 
         $user->setUsername($username);
         $user->setPassword($hashedPassword);
+
+        if (!empty($role)) {
+            if (!in_array($role, ['ADMIN', 'USER', 'COACH'])) {
+                return $this->json(['error' => 'Invalid role'], Response::HTTP_BAD_REQUEST);
+            }
+            $user->setRole($role);
+        }
 
         $entityManager->persist($user);
         $entityManager->flush();
