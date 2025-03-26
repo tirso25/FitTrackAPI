@@ -11,22 +11,22 @@ class Excercises
     #[ORM\Id]
     #[ORM\GeneratedValue()]
     #[ORM\Column(type: Types::INTEGER)]
-    private $id_exe = null;
+    private ?int $id_exe = null;
 
     #[ORM\Column(length: 255, type: Types::STRING)]
-    private $name = null;
+    private ?string $name = null;
 
     #[ORM\Column(length: 255, type: Types::STRING)]
-    private $description = null;
+    private ?string $description = null;
 
     #[ORM\Column(length: 255, type: Types::STRING)]
-    private $category = null;
+    private ?string $category = null;
 
     #[ORM\Column(length: 32, type: Types::INTEGER)]
-    private $likes = null;
+    private ?int $likes = null;
 
     #[ORM\Column(type: Types::BOOLEAN)]
-    private $active = null;
+    private ?bool $active = null;
 
     public function getIdExe()
     {
@@ -88,13 +88,6 @@ class Excercises
         return $this;
     }
 
-    public static function exerciseExisting($name, EntityManagerInterface $entityManager)
-    {
-        $exercise = $entityManager->getRepository(Excercises::class)->findOneBy(['name' => $name]);
-
-        return $exercise !== null;
-    }
-
     public function getActive()
     {
         return $this->active;
@@ -105,5 +98,17 @@ class Excercises
         $this->active = $active;
 
         return $this;
+    }
+
+    public static function validate($data)
+    {
+        return htmlspecialchars(stripslashes(trim($data)), ENT_QUOTES, 'UTF-8');
+    }
+
+    public static function exerciseExisting($name, EntityManagerInterface $entityManager)
+    {
+        $exercise = $entityManager->getRepository(Excercises::class)->findOneBy(['name' => $name]);
+
+        return $exercise !== null;
     }
 }

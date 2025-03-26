@@ -18,11 +18,11 @@ class UsersController extends AbstractController
     {
         $users = $entityManager->getRepository(Users::class)->findAll();
 
-        $data = [];
-
         if (!$users) {
             return $this->json(['alert' => 'No users found'], Response::HTTP_OK);
         }
+
+        $data = [];
 
         foreach ($users as $user) {
             $data[] = [
@@ -30,7 +30,8 @@ class UsersController extends AbstractController
                 'email' => $user->getEmail(),
                 'username' => $user->getUsername(),
                 'password' => $user->getPassword(),
-                'role' => $user->getRole()
+                'role' => $user->getRole(),
+                'active' => $user->getActive()
             ];
         }
 
@@ -90,6 +91,7 @@ class UsersController extends AbstractController
         $newUser->setUsername($username);
         $newUser->setPassword(Users::hashPassword($password));
         $newUser->setRole('USER');
+        $newUser->setActive(true);
 
         $entityManager->persist($newUser);
         $entityManager->flush();

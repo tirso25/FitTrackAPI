@@ -12,19 +12,22 @@ class Users
     #[ORM\Id]
     #[ORM\GeneratedValue()]
     #[ORM\Column(type: Types::INTEGER)]
-    private $id_usr = null;
+    private ?int $id_usr = null;
 
     #[ORM\Column(length: 255, type: Types::STRING)]
-    private $email = null;
+    private ?string $email = null;
 
     #[ORM\Column(length: 255, type: Types::STRING)]
-    private $username = null;
+    private ?string $username = null;
 
     #[ORM\Column(length: 255, type: Types::TEXT)]
-    private $password = null;
+    private ?string $password = null;
 
     #[ORM\Column(length: 255, type: Types::STRING)]
-    private $role = null;
+    private ?string $role = null;
+
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
+    private ?bool $active = null;
 
     public function getIdUsr()
     {
@@ -82,6 +85,18 @@ class Users
     public function setRole($role)
     {
         $this->role = $role;
+
+        return $this;
+    }
+
+    public function getActive()
+    {
+        return $this->active;
+    }
+
+    public function setActive($active)
+    {
+        $this->active = $active;
 
         return $this;
     }
