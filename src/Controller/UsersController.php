@@ -20,6 +20,10 @@ class UsersController extends AbstractController
 
         $data = [];
 
+        if (!$users) {
+            return $this->json(['alert' => 'No users found'], Response::HTTP_OK);
+        }
+
         foreach ($users as $user) {
             $data[] = [
                 'id_usr' => $user->getIdUsr(),
@@ -28,10 +32,6 @@ class UsersController extends AbstractController
                 'password' => $user->getPassword(),
                 'role' => $user->getRole()
             ];
-        }
-
-        if (empty($data)) {
-            return $this->json(['alert' => 'No users found'], Response::HTTP_OK);
         }
 
         return $this->json($data, Response::HTTP_OK);

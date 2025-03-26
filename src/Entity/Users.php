@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\DBAL\Types\Types;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'users')]
@@ -10,20 +11,20 @@ class Users
 {
     #[ORM\Id]
     #[ORM\GeneratedValue()]
-    #[ORM\Column()]
-    private ?int $id_usr = null;
+    #[ORM\Column(type: Types::INTEGER)]
+    private $id_usr = null;
 
-    #[ORM\Column(length: 255)]
-    private ?string $email = null;
+    #[ORM\Column(length: 255, type: Types::STRING)]
+    private $email = null;
 
-    #[ORM\Column(length: 255)]
-    private ?string $username = null;
+    #[ORM\Column(length: 255, type: Types::STRING)]
+    private $username = null;
 
-    #[ORM\Column(length: 255)]
-    private ?string $password = null;
+    #[ORM\Column(length: 255, type: Types::TEXT)]
+    private $password = null;
 
-    #[ORM\Column(length: 255)]
-    private ?string $role = null;
+    #[ORM\Column(length: 255, type: Types::STRING)]
+    private $role = null;
 
     public function getIdUsr()
     {
