@@ -2,7 +2,7 @@
 
 namespace App\Controller;
 
-use App\Entity\Excercises;
+use App\Entity\Exercises;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -10,27 +10,28 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\Response;
 
 
-#[Route('/api')]
-class ExcercisesController extends AbstractController
+#[Route('/api/exercises')]
+class ExercisesController extends AbstractController
 {
-    #[Route('/seeAllExcercises', 'api_seeAllExcercises', methods: ['GET'])]
-    public function seeAllExcercises(EntityManagerInterface $entityManager): JsonResponse
+    #[Route('/seeAllExercises', 'api_seeAllExercises', methods: ['GET'])]
+    public function seeAllExercises(EntityManagerInterface $entityManager): JsonResponse
     {
-        $excercises = $entityManager->getRepository(Excercises::class)->findAll();
+        $exercises = $entityManager->getRepository(Exercises::class)->findAll();
 
-        if (!$excercises) {
-            return $this->json(['error' => 'No excercises found'], Response::HTTP_OK);
+        if (!$exercises) {
+            return $this->json(['error' => 'No exercises found'], Response::HTTP_OK);
         }
 
         $data = [];
 
-        foreach ($excercises as $excercise) {
+        foreach ($exercises as $excercise) {
             $data[] = [
                 'id_exe' => $excercise->getIdExe(),
                 'name' => $excercise->getName(),
                 'description' => $excercise->getDescription(),
                 'category' => $excercise->getCategory(),
                 'likes' => $excercise->getLikes(),
+                'active' => $excercise->getActive()
             ];
         }
 
@@ -40,7 +41,7 @@ class ExcercisesController extends AbstractController
     #[Route('/seeOneExcercise/{id<\d+>}', 'api_seeOneExcercise', methods: ['GET'])]
     public function seeOneExcercise(EntityManagerInterface $entityManager, $id): JsonResponse
     {
-        $excercise = $entityManager->find(Excercises::class, $id);
+        $excercise = $entityManager->find(Exercises::class, $id);
 
         if (!$excercise) {
             return $this->json(['error' => 'The excercise does not exist'], Response::HTTP_BAD_REQUEST);
@@ -51,7 +52,8 @@ class ExcercisesController extends AbstractController
             'name' => $excercise->getName(),
             'description' => $excercise->getDescription(),
             'category' => $excercise->getCategory(),
-            'likes' => $excercise->getLikes()
+            'likes' => $excercise->getLikes(),
+            'active' => $excercise->getActive()
         ];
 
         return $this->json($data, Response::HTTP_OK);

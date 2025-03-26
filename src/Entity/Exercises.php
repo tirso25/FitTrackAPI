@@ -6,7 +6,9 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping as ORM;
 
-class Excercises
+#[ORM\Entity]
+#[ORM\Table(name: 'exercises')]
+class Exercises
 {
     #[ORM\Id]
     #[ORM\GeneratedValue()]
@@ -25,7 +27,7 @@ class Excercises
     #[ORM\Column(length: 32, type: Types::INTEGER)]
     private ?int $likes = null;
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
     private ?bool $active = null;
 
     public function getIdExe()
@@ -107,7 +109,7 @@ class Excercises
 
     public static function exerciseExisting($name, EntityManagerInterface $entityManager)
     {
-        $exercise = $entityManager->getRepository(Excercises::class)->findOneBy(['name' => $name]);
+        $exercise = $entityManager->getRepository(Exercises::class)->findOneBy(['name' => $name]);
 
         return $exercise !== null;
     }

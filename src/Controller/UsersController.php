@@ -10,7 +10,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Route('/api')]
+#[Route('/api/users')]
 class UsersController extends AbstractController
 {
     #[Route('/seeAllUsers', 'api_seeAllUsers', methods: ['GET'])]
@@ -52,7 +52,8 @@ class UsersController extends AbstractController
             'email' => $user->getEmail(),
             'username' => $user->getUsername(),
             'password' => $user->getPassword(),
-            'role' => $user->getRole()
+            'role' => $user->getRole(),
+            'active' => $user->getActive()
         ];
 
         return $this->json($data, Response::HTTP_OK);
@@ -127,7 +128,7 @@ class UsersController extends AbstractController
             return $this->json(['error' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
         }
 
-        $entityManager->remove($delUser);
+        $delUser->setActive(false);
         $entityManager->flush();
 
 
