@@ -119,12 +119,12 @@ class UsersController extends AbstractController
         return $this->json(['success' => 'Session successfully started'], Response::HTTP_OK);
     }
 
-    #[Route('/deleteUser/{id<\d+>}', 'api_deleteUser', methods: ['DELETE', 'GET'])]
+    #[Route('/deleteUser/{id<\d+>}', 'api_deleteUser', methods: ['DELETE', 'POST'])]
     public function deleteUser(EntityManagerInterface $entityManager, $id): JsonResponse
     {
         $delUser = $entityManager->find(Users::class, $id);
 
-        if (!isset($delUser)) {
+        if (!$delUser) {
             return $this->json(['error' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
         }
 
@@ -138,6 +138,14 @@ class UsersController extends AbstractController
     #[Route('/modifyUser/{id<\d+>}', 'api_modifyUser', methods: ['PUT', 'POST'])]
     public function modifyUser(EntityManagerInterface $entityManager, Request $request, $id): JsonResponse
     {
+        $user = $entityManager->find(Users::class, $id);
+
+        //!VER TEMA COMPROBAR QUE EL ID QUE SE PASA POR LA URL SEA EL MISMO QUE EL DEL USUARIO QUE LO SOLICITA SOLO PARA LOS USUARIOS NO SE PUEDE HACER CON EL ADMIN YA QUE EL PUEDE MODIFICAR LOS PERFILES DE LOS USUARIOS POR EJEMPLO PARA MODIFICAR EL ROLE
+
+        if (!$user) {
+            return $this->json(['error' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
+        }
+
         $data = json_decode($request->getContent(), true);
 
         $username = Users::validate($data['username']);
@@ -148,18 +156,13 @@ class UsersController extends AbstractController
             return $this->json(['error' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
         }
 
-        $user = $entityManager->find(Users::class, $id);
-
-        //!VER TEMA COMPROBAR QUE EL ID QUE SE PASA POR LA URL SEA EL MISMO QUE EL DEL USUARIO QUE LO SOLICITA SOLO PARA LOS USUARIOS NO SE PUEDE HACER CON EL ADMIN YA QUE EL PUEDE MODIFICAR LOS PERFILES DE LOS USUARIOS POR EJEMPLO PARA MODIFICAR EL ROLE
-
-        if (!$user) {
-            return $this->json(['error' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
+        if (Users::userExisting($username, $username, $entityManager)) {
+            return $this->json(['error' => 'User already exists', Response::HTTP_BAD_REQUEST]);
         }
-
-        $hashedPassword = Users::hashPassword($password);
 
         $user->setUsername($username);
         if (!empty($password)) {
+            $hashedPassword = Users::hashPassword($password);
             $user->setPassword($hashedPassword);
         }
 
@@ -170,7 +173,6 @@ class UsersController extends AbstractController
             $user->setRole($role);
         }
 
-        $entityManager->persist($user);
         $entityManager->flush();
 
         return $this->json(['success' => 'User successfully updated'], Response::HTTP_CREATED);

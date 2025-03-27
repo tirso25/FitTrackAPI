@@ -3,7 +3,6 @@
 namespace App\Entity;
 
 use Doctrine\DBAL\Types\Types;
-use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -107,7 +106,7 @@ class Exercises
         return htmlspecialchars(stripslashes(trim($data)), ENT_QUOTES, 'UTF-8');
     }
 
-    public static function exerciseExisting($name, EntityManagerInterface $entityManager)
+    public static function exerciseExisting($name, $entityManager)
     {
         $exercise = $entityManager->getRepository(Exercises::class)->findOneBy(['name' => $name]);
 
