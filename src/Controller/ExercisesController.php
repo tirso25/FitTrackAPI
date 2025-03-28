@@ -65,8 +65,8 @@ class ExercisesController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        $name = Exercises::validate($data['name']);
-        $description = Exercises::validate($data['description']);
+        $name = Exercises::validate(strtolower($data['name']));
+        $description = Exercises::validate(strtolower($data['description']));
         $category = Exercises::validate($data['category']);
 
         if (empty($name) || empty($description) || empty($category)) {
@@ -120,8 +120,8 @@ class ExercisesController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
 
-        $name = Exercises::validate($data['name']);
-        $description = Exercises::validate($data['description']);
+        $name = Exercises::validate(strtolower($data['name']));
+        $description = Exercises::validate(strtolower($data['description']));
         $category = Exercises::validate($data['category']);
 
         if (empty($name) || empty($description) || empty($category)) {

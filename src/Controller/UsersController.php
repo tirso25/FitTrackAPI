@@ -64,8 +64,8 @@ class UsersController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        $email = Users::validate($data['email']);
-        $username = Users::validate($data['username']);
+        $email = Users::validate(strtolower($data['email']));
+        $username = Users::validate(strtolower($data['username']));
         $password = $data['password'];
         $repeatPassword = $data['repeatPassword'];
 
@@ -105,7 +105,7 @@ class UsersController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        $emailUsername = Users::validate($data['emailUsername']);
+        $emailUsername = Users::validate(strtolower($data['emailUsername']));
         $password = Users::validate($data['password']);
 
         if (empty($emailUsername) || empty($password)) {
@@ -148,7 +148,7 @@ class UsersController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
 
-        $username = Users::validate($data['username']);
+        $username = Users::validate(strtolower($data['username']));
         $password = Users::validate($data['password']);
         $role = Users::validate($data['role']);
 
