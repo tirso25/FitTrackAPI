@@ -13,7 +13,7 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/users')]
 class UsersController extends AbstractController
 {
-    #[Route('/seeAllUsers', 'api_seeAllUsers', methods: ['GET'])]
+    #[Route('/seeAllUsers', name: 'api_seeAllUsers', methods: ['GET'])]
     public function seeAllUsers(EntityManagerInterface $entityManager): JsonResponse
     {
         $users = $entityManager->getRepository(Users::class)->findAll();
@@ -38,8 +38,8 @@ class UsersController extends AbstractController
         return $this->json($data, Response::HTTP_OK);
     }
 
-    #[Route('/seeOneUser/{id<\d+>}', 'api_seeOneUser', methods: ['GET'])]
-    public function seeOneUser(EntityManagerInterface $entityManager, $id): JsonResponse
+    #[Route('/seeOneUser/{id<\d+>}', name: 'api_seeOneUser', methods: ['GET'])]
+    public function seeOneUser(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
         $user = $entityManager->find(Users::class, $id);
 
@@ -59,7 +59,7 @@ class UsersController extends AbstractController
         return $this->json($data, Response::HTTP_OK);
     }
 
-    #[Route('/singUp', 'api_singUp', methods: ['POST'])]
+    #[Route('/singUp', name: 'api_singUp', methods: ['POST'])]
     public function singUp(EntityManagerInterface $entityManager, Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -110,7 +110,7 @@ class UsersController extends AbstractController
         return $this->json(['success' => 'User successfully created'], Response::HTTP_CREATED);
     }
 
-    #[Route('/singIn', 'api_singIn', methods: ['POST'])]
+    #[Route('/singIn', name: 'api_singIn', methods: ['POST'])]
     public function singIn(EntityManagerInterface $entityManager, Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -146,8 +146,8 @@ class UsersController extends AbstractController
         return $this->json(['success' => 'Session successfully started'], Response::HTTP_OK);
     }
 
-    #[Route('/deleteUser/{id<\d+>}', 'api_deleteUser', methods: ['DELETE', 'POST'])]
-    public function deleteUser(EntityManagerInterface $entityManager, $id): JsonResponse
+    #[Route('/deleteUser/{id<\d+>}', name: 'api_deleteUser', methods: ['DELETE', 'POST'])]
+    public function deleteUser(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
         $delUser = $entityManager->find(Users::class, $id);
 
@@ -162,8 +162,8 @@ class UsersController extends AbstractController
         return $this->json(['success' => 'User successfully deleted'], Response::HTTP_CREATED);
     }
 
-    #[Route('/modifyUser/{id<\d+>}', 'api_modifyUser', methods: ['PUT', 'POST'])]
-    public function modifyUser(EntityManagerInterface $entityManager, Request $request, $id): JsonResponse
+    #[Route('/modifyUser/{id<\d+>}', name: 'api_modifyUser', methods: ['PUT', 'POST'])]
+    public function modifyUser(EntityManagerInterface $entityManager, Request $request, int $id): JsonResponse
     {
         $user = $entityManager->find(Users::class, $id);
 

@@ -10,11 +10,11 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\Response;
 
-
+//!VER PARA QUE SOLO SEA ACCESIBLE PARA LOS ADMINS Y ENTRENADORES (EXCEPCIONES COMO VER LOS EJERCICIOS)
 #[Route('/api/exercises')]
 class ExercisesController extends AbstractController
 {
-    #[Route('/seeAllExercises', 'api_seeAllExercises', methods: ['GET'])]
+    #[Route('/seeAllExercises', name: 'api_seeAllExercises', methods: ['GET'])]
     public function seeAllExercises(EntityManagerInterface $entityManager): JsonResponse
     {
         $exercises = $entityManager->getRepository(Exercises::class)->findAll();
@@ -39,8 +39,35 @@ class ExercisesController extends AbstractController
         return $this->json($data, Response::HTTP_OK);
     }
 
-    #[Route('/seeOneExcercise/{id<\d+>}', 'api_seeOneExcercise', methods: ['GET'])]
-    public function seeOneExcercise(EntityManagerInterface $entityManager, $id): JsonResponse
+    #[Route('/seeAllActiveExercises', name: 'api_seeAllActiveExercises', methods: ['GET'])]
+    public function seeAllActiveExercises(EntityManagerInterface $entityManager): JsonResponse
+    {
+        $exercises = $entityManager->createQuery(
+            'SELECT e FROM App\Entity\Exercises e WHERE e.active = true'
+        )->getResult();
+
+        if (empty($exercises)) {
+            return $this->json(['error' => 'No exercises found'], Response::HTTP_OK);
+        }
+
+        $data = [];
+
+        foreach ($exercises as $exercise) {
+            $data[] = [
+                'id_exe' => $exercise->getIdExe(),
+                'name' => $exercise->getName(),
+                'description' => $exercise->getDescription(),
+                'category' => $exercise->getCategory(),
+                'likes' => $exercise->getLikes(),
+            ];
+        }
+
+        return $this->json($data, Response::HTTP_OK);
+    }
+
+
+    #[Route('/seeOneExcercise/{id<\d+>}', name: 'api_seeOneExcercise', methods: ['GET'])]
+    public function seeOneExcercise(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
         $excercise = $entityManager->find(Exercises::class, $id);
 
@@ -60,7 +87,7 @@ class ExercisesController extends AbstractController
         return $this->json($data, Response::HTTP_OK);
     }
 
-    #[Route('/addExercise', 'api_addExercise', methods: ['POST'])]
+    #[Route('/addExercise', name: 'api_addExercise', methods: ['POST'])]
     public function addExercise(EntityManagerInterface $entityManager, Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -105,8 +132,8 @@ class ExercisesController extends AbstractController
         return $this->json(['success' => 'Exercise successfully created'], Response::HTTP_CREATED);
     }
 
-    #[Route('/deleteExercise/{id<\d+>}', 'api_deleteExercise', methods: ['DELETE', 'POST'])]
-    public function deleteExercise(EntityManagerInterface $entityManager, $id): JsonResponse
+    #[Route('/deleteExercise/{id<\d+>}', name: 'api_deleteExercise', methods: ['DELETE', 'POST'])]
+    public function deleteExercise(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
         $delexercise = $entityManager->find(Exercises::class, $id);
 
@@ -120,8 +147,8 @@ class ExercisesController extends AbstractController
         return $this->json(['success' => 'Exercise successfully deleted'], Response::HTTP_CREATED);
     }
 
-    #[Route('/modifyExercise/{id<\d+>}', 'api_modifyExercise', methods: ['POST', 'PUT'])]
-    public function modifyExercise(EntityManagerInterface $entityManager, Request $request, $id): JsonResponse
+    #[Route('/modifyExercise/{id<\d+>}', name: 'api_modifyExercise', methods: ['POST', 'PUT'])]
+    public function modifyExercise(EntityManagerInterface $entityManager, Request $request, int $id): JsonResponse
     {
         $excercise = $entityManager->find(Exercises::class, $id);
 
