@@ -4,6 +4,8 @@ namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\DBAL\Types\Types;
+use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\ArrayCollection;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'users')]
@@ -29,74 +31,87 @@ class Users
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
     private ?bool $active = null;
 
-    public function getIdUsr()
+    #[ORM\OneToMany(targetEntity: ExercisesXUser::class, mappedBy: 'user', orphanRemoval: true)]
+    private Collection $exercisesXUser;
+
+    public function __construct()
+    {
+        $this->exercisesXUser = new ArrayCollection();
+    }
+
+    public function getIdUsr(): ?int
     {
         return $this->id_usr;
     }
 
-    public function setIdUsr($id_usr)
-    {
-        $this->id_usr = $id_usr;
-
-        return $this;
-    }
-
-    public function getEmail()
+    public function getEmail(): ?string
     {
         return $this->email;
     }
 
-    public function setEmail($email)
+    public function setEmail(string $email): static
     {
         $this->email = $email;
 
         return $this;
     }
 
-    public function getUsername()
+    public function getUsername(): ?string
     {
         return $this->username;
     }
 
-    public function setUsername($username)
+    public function setUsername(string $username): static
     {
         $this->username = $username;
 
         return $this;
     }
 
-    public function getPassword()
+    public function getPassword(): ?string
     {
         return $this->password;
     }
 
-    public function setPassword($password)
+    public function setPassword(string $password): static
     {
         $this->password = $password;
 
         return $this;
     }
 
-    public function getRole()
+    public function getRole(): ?string
     {
         return $this->role;
     }
 
-    public function setRole($role)
+    public function setRole(string $role): static
     {
         $this->role = $role;
 
         return $this;
     }
 
-    public function getActive()
+    public function getActive(): ?bool
     {
         return $this->active;
     }
 
-    public function setActive($active)
+    public function setActive(bool $active): static
     {
         $this->active = $active;
+
+        return $this;
+    }
+
+    public function getExercisesXUser(): Collection
+    {
+        return $this->exercisesXUser;
+    }
+
+    public function setExercisesXUser(Collection $exercisesXUser): static
+    {
+        $this->exercisesXUser = $exercisesXUser;
 
         return $this;
     }
