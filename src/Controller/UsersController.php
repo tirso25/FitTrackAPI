@@ -69,13 +69,23 @@ class UsersController extends AbstractController
         $password = $data['password'];
         $repeatPassword = $data['repeatPassword'];
 
+        $password_regex = "/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{5,}$/";
+        $username_regex = "/^[a-z0-9]{5,20}$/";
 
         if (empty($email) || empty($username) || empty($password) || empty($repeatPassword)) {
             return $this->json(['error' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 255) {
             return $this->json(['error' => 'Invalid email format'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!preg_match($password_regex, $password) || !preg_match($password_regex, $repeatPassword)) {
+            return $this->json(['error' => 'Invalid password format'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!preg_match($username_regex, $username)) {
+            return $this->json(['error' => 'Invalid username format'], Response::HTTP_BAD_REQUEST);
         }
 
         if (Users::userExisting($email, $username, $entityManager)) {
@@ -108,8 +118,25 @@ class UsersController extends AbstractController
         $emailUsername = Users::validate(strtolower($data['emailUsername']));
         $password = Users::validate($data['password']);
 
+        $password_regex = "/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{5,}$/";
+        $username_regex = "/^[a-z0-9]{5,20}$/";
+
         if (empty($emailUsername) || empty($password)) {
             return $this->json(['error' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (str_contains($emailUsername, '@')) {
+            if (!filter_var($emailUsername, FILTER_VALIDATE_EMAIL) || strlen($emailUsername) > 255) {
+                return $this->json(['error' => 'Invalid email format'], Response::HTTP_BAD_REQUEST);
+            }
+        } else {
+            if (!preg_match($username_regex, $emailUsername)) {
+                return $this->json(['error' => 'Invalid username format'], Response::HTTP_BAD_REQUEST);
+            }
+        }
+
+        if (!preg_match($password_regex, $password)) {
+            return $this->json(['error' => 'Invalid password format'], Response::HTTP_BAD_REQUEST);
         }
 
         if (!Users::passwordsMatch($emailUsername, $password, $entityManager)) {
@@ -152,8 +179,20 @@ class UsersController extends AbstractController
         $password = Users::validate($data['password']);
         $role = Users::validate($data['role']);
 
+        $password_regex = "/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{5,}$/";
+        $username_regex = "/^[a-z0-9]{5,20}$/";
+        $role_regex = "/^[a-z0-9]{1,5}$/";
+
         if (empty($username)) {
             return $this->json(['error' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!preg_match($password_regex, $password)) {
+            return $this->json(['error' => 'Invalid password format'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!preg_match($username_regex, $username)) {
+            return $this->json(['error' => 'Invalid username format'], Response::HTTP_BAD_REQUEST);
         }
 
         if (Users::userExisting($username, $username, $entityManager)) {
@@ -167,7 +206,7 @@ class UsersController extends AbstractController
         }
 
         if (!empty($role)) {
-            if (!in_array($role, ['ADMIN', 'USER', 'COACH'])) {
+            if (!in_array($role, ['ADMIN', 'USER', 'COACH']) || !preg_match($role_regex, $role)) {
                 return $this->json(['error' => 'Invalid role'], Response::HTTP_BAD_REQUEST);
             }
             $user->setRole($role);

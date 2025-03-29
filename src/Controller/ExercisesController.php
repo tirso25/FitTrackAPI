@@ -69,15 +69,26 @@ class ExercisesController extends AbstractController
         $description = Exercises::validate(strtolower($data['description']));
         $category = Exercises::validate($data['category']);
 
+        $name_regex = "/^[a-z0-9]{1,30}$/";
+        $category_regex = "/^[a-z0-9]{1,10}$/";
+
         if (empty($name) || empty($description) || empty($category)) {
             return $this->json(['error' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!preg_match($name_regex, $name)) {
+            return $this->json(['error' => 'Invalid name format'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (strlen($description) > 500 || strlen($description) < 10) {
+            return $this->json(['error' => 'Invalid description format'], Response::HTTP_BAD_REQUEST);
         }
 
         if (Exercises::exerciseExisting($name, $entityManager)) {
             return $this->json(['error' => 'Exercise already exists'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!in_array($category, ['CHEST', 'SHOULDER', 'TRICEPS', 'BACK', 'BICEPS', 'ABDOMINALS', 'FEMORAL', 'QUADRICEPS', 'CALVES'])) {
+        if (!in_array($category, ['CHEST', 'SHOULDER', 'TRICEPS', 'BACK', 'BICEPS', 'ABDOMINALS', 'FEMORAL', 'QUADRICEPS', 'CALVES']) || !preg_match($category_regex, $category)) {
             return $this->json(['error' => 'Invalid category'], Response::HTTP_BAD_REQUEST);
         }
 
@@ -124,6 +135,9 @@ class ExercisesController extends AbstractController
         $description = Exercises::validate(strtolower($data['description']));
         $category = Exercises::validate($data['category']);
 
+        $name_regex = "/^[a-z0-9]{1,30}$/";
+        $category_regex = "/^[a-z0-9]{1,10}$/";
+
         if (empty($name) || empty($description) || empty($category)) {
             return $this->json(['error' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
         }
@@ -132,7 +146,15 @@ class ExercisesController extends AbstractController
             return $this->json(['error' => 'Exercise already exists', Response::HTTP_BAD_REQUEST]);
         }
 
-        if (!in_array($category, ['CHEST', 'SHOULDER', 'TRICEPS', 'BACK', 'BICEPS', 'ABDOMINALS', 'FEMORAL', 'QUADRICEPS', 'CALVES'])) {
+        if (!preg_match($name_regex, $name)) {
+            return $this->json(['error' => 'Invalid name format'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (strlen($description) > 500 || strlen($description) < 10) {
+            return $this->json(['error' => 'Invalid description format'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!in_array($category, ['CHEST', 'SHOULDER', 'TRICEPS', 'BACK', 'BICEPS', 'ABDOMINALS', 'FEMORAL', 'QUADRICEPS', 'CALVES']) || !preg_match($category_regex, $category)) {
             return $this->json(['error' => 'Invalid category'], Response::HTTP_BAD_REQUEST);
         }
 
