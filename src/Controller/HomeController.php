@@ -2,7 +2,6 @@
 
 namespace App\Controller;
 
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -10,7 +9,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 class HomeController extends AbstractController
 {
     #[Route('/', name: 'app_home')]
-    public function index(Request $request): Response
+    public function index(): Response
     {
         $info = [
             'message' => 'Welcome to our FitTrackAPI!👋',
@@ -34,7 +33,7 @@ class HomeController extends AbstractController
             ]
         ];
 
-        return $this->render('home/index.html.twig', [
+        return $this->render('home/infoAPI.html.twig', [
             'apiInfo' => $info,
             'jsonInfo' => json_encode($info, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
         ]);
