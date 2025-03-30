@@ -6,26 +6,36 @@ use Doctrine\ORM\Mapping as ORM;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ArrayCollection;
-
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity]
-#[ORM\Table(name: 'users')]
+#[ORM\Table(name: 'users', uniqueConstraints: [
+    new ORM\UniqueConstraint(name: 'UNIQ_USER_EMAIL', fields: ['email']),
+    new ORM\UniqueConstraint(name: 'UNIQ_USER_USERNAME', fields: ['username'])
+])]
+#[UniqueEntity(fields: ['email'], message: 'There is already an account with this email')]
+#[UniqueEntity(fields: ['username'], message: 'This username is already taken')]
 class Users
 {
     #[ORM\Id]
-    #[ORM\GeneratedValue()]
+    #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER)]
     private ?int $id_usr = null;
 
-    #[ORM\Column(length: 255, type: Types::STRING)]
+    #[ORM\Column(length: 255, type: Types::STRING, unique: true)]
+    #[Assert\NotBlank]
+    #[Assert\Email]
     private ?string $email = null;
 
-    #[ORM\Column(length: 255, type: Types::STRING)]
+    #[ORM\Column(length: 20, type: Types::STRING, unique: true)]
+    #[Assert\NotBlank]
     private ?string $username = null;
 
     #[ORM\Column(length: 255, type: Types::TEXT)]
+    #[Assert\NotBlank]
     private ?string $password = null;
 
-    #[ORM\Column(length: 255, type: Types::STRING)]
+    #[ORM\Column(length: 5, type: Types::STRING)]
     private ?string $role = null;
 
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]

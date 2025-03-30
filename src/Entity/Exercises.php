@@ -6,26 +6,35 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ArrayCollection;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity]
-#[ORM\Table(name: 'exercises')]
+#[ORM\Table(name: 'exercises', uniqueConstraints: [
+    new ORM\UniqueConstraint(name: 'UNIQ_EXERCISE_NAME', fields: ['name'])
+])]
+#[UniqueEntity(fields: ['name'], message: 'This exercise name is already taken')]
 class Exercises
 {
     #[ORM\Id]
-    #[ORM\GeneratedValue()]
+    #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER)]
     private ?int $id_exe = null;
 
-    #[ORM\Column(length: 255, type: Types::STRING)]
+    #[ORM\Column(length: 30, type: Types::STRING, unique: true)]
+    #[Assert\NotBlank]
     private ?string $name = null;
 
-    #[ORM\Column(length: 255, type: Types::STRING)]
+    #[ORM\Column(length: 500, type: Types::STRING)]
+    #[Assert\NotBlank]
     private ?string $description = null;
 
-    #[ORM\Column(length: 255, type: Types::STRING)]
+    #[ORM\Column(length: 10, type: Types::STRING)]
+    #[Assert\NotBlank]
     private ?string $category = null;
 
-    #[ORM\Column(length: 32, type: Types::INTEGER)]
+    #[ORM\Column(type: Types::INTEGER)]
+    #[Assert\NotNull]
     private ?int $likes = null;
 
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
