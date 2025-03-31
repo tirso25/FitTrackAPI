@@ -132,7 +132,7 @@ class Users
         return htmlspecialchars(stripslashes(trim($data)), ENT_QUOTES, 'UTF-8');
     }
 
-    public static function hashPassword($password)
+    public static function hashPassword(string $password)
     {
         $options = [
             'cost' => 13,
@@ -141,7 +141,7 @@ class Users
         return password_hash($password, PASSWORD_BCRYPT, $options);
     }
 
-    public static function passwordVerify($userPassword, $hashedPawword)
+    public static function passwordVerify(string $userPassword, $hashedPawword)
     {
         return password_verify($userPassword, $hashedPawword);
     }
@@ -155,7 +155,7 @@ class Users
     //     return $emailExisting !== null || $usernameExisting !== null;
     // }
 
-    public static function userExisting($email, $username, $entityManager)
+    public static function userExisting(string $email, string $username, $entityManager)
     {
         $query = $entityManager->createQuery(
             'SELECT u FROM App\Entity\Users u WHERE u.email = :email OR u.username = :username'
@@ -167,7 +167,7 @@ class Users
         return $query->getOneOrNullResult() !== null;
     }
 
-    public static function userExisting2($id, $username, $entityManager)
+    public static function userExisting2(int $id, string $username, $entityManager)
     {
         $query2 = $entityManager->createQuery(
             'SELECT u.username FROM App\Entity\Users u WHERE u.id_usr = :id'
@@ -192,7 +192,7 @@ class Users
     }
 
 
-    public static function passwordsMatch($email, $password, $entityManager)
+    public static function passwordsMatch(string $email, string $password, $entityManager)
     {
         if (Users::userExisting($email, $email, $entityManager)) {
             $query = $entityManager->createQuery(

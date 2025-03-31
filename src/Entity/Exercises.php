@@ -130,14 +130,14 @@ class Exercises
         return htmlspecialchars(stripslashes(trim($data)), ENT_QUOTES, 'UTF-8');
     }
 
-    public static function exerciseExisting($name, $entityManager)
+    public static function exerciseExisting(string $name, $entityManager)
     {
         $exercise = $entityManager->getRepository(Exercises::class)->findOneBy(['name' => $name]);
 
         return $exercise !== null;
     }
 
-    public static function exerciseExisting2($id, $name, $entityManager)
+    public static function exerciseExisting2(int $id, string $name, $entityManager)
     {
         $query2 = $entityManager->createQuery(
             'SELECT u.name FROM App\Entity\Exercises u WHERE u.id_exe = :id'
