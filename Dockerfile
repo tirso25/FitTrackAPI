@@ -1,56 +1,26 @@
-# Imagen base con PHP 8.2 y FPM
-FROM php:8.2-fpm
+# Usa la imagen oficial de PHP con Apache
+FROM php:8.2-apache
 
-# Instalar dependencias del sistema
+# Instala las extensiones necesarias para MySQL y otras dependencias
 RUN apt-get update && apt-get install -y \
-    git \
-    unzip \
-    libicu-dev \
-    libzip-dev \
     libpng-dev \
     libjpeg-dev \
     libfreetype6-dev \
     libonig-dev \
-    libxml2-dev \
-    libssl-dev \
+    libzip-dev \
+    unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) \
-    pdo \
-    pdo_mysql \ 
-    intl \
-    gd \
-    opcache \
-    zip \
-    mbstring \
-    xml \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    && docker-php-ext-install gd zip pdo pdo_mysql
 
-# Instalar Composer
-RUN curl -sS https://getcomposer.org/installer | php -- \
-    --install-dir=/usr/local/bin --filename=composer
+# Copia el código de la aplicación
+COPY . /var/www/html
 
-# Crear usuario y directorio de trabajo
-RUN groupadd -g 1000 symfony && \
-    useradd -u 1000 -g symfony -m symfony && \
-    mkdir -p /var/www/html && \
-    chown symfony:symfony /var/www/html
+# Da permisos al directorio de trabajo
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html
 
-WORKDIR /var/www/html
+# Exponer el puerto 80
+EXPOSE 80
 
-# Copiar archivos con permisos correctos
-COPY --chown=symfony:symfony . .
-
-# Cambiar a usuario Symfony
-USER symfony
-
-# Instalar dependencias con Composer
-RUN composer install --no-dev --optimize-autoloader
-
-# Limpiar caché de Symfony (por si hay configuraciones antiguas)
-RUN php bin/console cache:clear --no-warmup
-
-# Exponer el puerto de la aplicación
-EXPOSE 10000
-
-# Comando de arranque del contenedor
-CMD ["php", "-S", "0.0.0.0:10000", "-t", "public"]
+# Comando por defecto
+CMD ["apache2-foreground"]
