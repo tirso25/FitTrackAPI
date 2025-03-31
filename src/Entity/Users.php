@@ -167,6 +167,31 @@ class Users
         return $query->getOneOrNullResult() !== null;
     }
 
+    public static function userExisting2($id, $username, $entityManager)
+    {
+        $query2 = $entityManager->createQuery(
+            'SELECT u.username FROM App\Entity\Users u WHERE u.id_usr = :id'
+        )->setParameter('id', $id);
+
+        $result = $query2->getOneOrNullResult();
+
+        if (!$result || !isset($result['username'])) {
+            return false;
+        }
+
+        $usernameDB = $result['username'];
+
+        $query = $entityManager->createQuery(
+            'SELECT u FROM App\Entity\Users u WHERE u.username = :username AND u.username != :usernameDB'
+        )->setParameters([
+            'username' => $username,
+            'usernameDB' => $usernameDB
+        ]);
+
+        return $query->getOneOrNullResult() !== null;
+    }
+
+
     public static function passwordsMatch($email, $password, $entityManager)
     {
         if (Users::userExisting($email, $email, $entityManager)) {

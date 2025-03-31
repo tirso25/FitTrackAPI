@@ -65,7 +65,6 @@ class ExercisesController extends AbstractController
         return $this->json($data, Response::HTTP_OK);
     }
 
-
     #[Route('/seeOneExcercise/{id<\d+>}', name: 'api_seeOneExcercise', methods: ['GET'])]
     public function seeOneExcercise(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
@@ -97,7 +96,7 @@ class ExercisesController extends AbstractController
         $category = Exercises::validate($data['category']);
 
         $name_regex = "/^[a-z0-9]{1,30}$/";
-        $category_regex = "/^[a-z0-9]{1,10}$/";
+        $category_regex = "/^[A-Z0-9]{1,10}$/";
 
         if (empty($name) || empty($description) || empty($category)) {
             return $this->json(['error' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
@@ -163,13 +162,13 @@ class ExercisesController extends AbstractController
         $category = Exercises::validate($data['category']);
 
         $name_regex = "/^[a-z0-9]{1,30}$/";
-        $category_regex = "/^[a-z0-9]{1,10}$/";
+        $category_regex = "/^[A-Z0-9]{1,10}$/";
 
         if (empty($name) || empty($description) || empty($category)) {
             return $this->json(['error' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (Exercises::exerciseExisting($name, $entityManager)) {
+        if (Exercises::exerciseExisting2($id, $name, $entityManager)) {
             return $this->json(['error' => 'Exercise already exists', Response::HTTP_BAD_REQUEST]);
         }
 

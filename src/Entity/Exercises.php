@@ -136,4 +136,28 @@ class Exercises
 
         return $exercise !== null;
     }
+
+    public static function exerciseExisting2($id, $name, $entityManager)
+    {
+        $query2 = $entityManager->createQuery(
+            'SELECT u.name FROM App\Entity\Exercises u WHERE u.id_exe = :id'
+        )->setParameter('id', $id);
+
+        $result = $query2->getOneOrNullResult();
+
+        if (!$result || !isset($result['name'])) {
+            return false;
+        }
+
+        $nameDB = $result['name'];
+
+        $query = $entityManager->createQuery(
+            'SELECT u FROM App\Entity\Exercises u WHERE u.name = :name AND u.name != :nameDB'
+        )->setParameters([
+            'name' => $name,
+            'nameDB' => $nameDB
+        ]);
+
+        return $query->getOneOrNullResult() !== null;
+    }
 }

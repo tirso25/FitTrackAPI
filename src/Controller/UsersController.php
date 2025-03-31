@@ -181,26 +181,27 @@ class UsersController extends AbstractController
 
         $password_regex = "/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{5,}$/";
         $username_regex = "/^[a-z0-9]{5,20}$/";
-        $role_regex = "/^[a-z0-9]{1,5}$/";
+        $role_regex = "/^[A-Z0-9]{1,5}$/";
 
         if (empty($username)) {
             return $this->json(['error' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
-        }
-
-        if (!preg_match($password_regex, $password)) {
-            return $this->json(['error' => 'Invalid password format'], Response::HTTP_BAD_REQUEST);
         }
 
         if (!preg_match($username_regex, $username)) {
             return $this->json(['error' => 'Invalid username format'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (Users::userExisting($username, $username, $entityManager)) {
+        if (Users::userExisting2($id, $username, $entityManager)) {
             return $this->json(['error' => 'User already exists', Response::HTTP_BAD_REQUEST]);
         }
 
         $user->setUsername($username);
+
         if (!empty($password)) {
+            if (!preg_match($password_regex, $password)) {
+                return $this->json(['error' => 'Invalid password format'], Response::HTTP_BAD_REQUEST);
+            }
+
             $hashedPassword = Users::hashPassword($password);
             $user->setPassword($hashedPassword);
         }
