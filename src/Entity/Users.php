@@ -146,7 +146,7 @@ class Users
         return password_verify($userPassword, $hashedPawword);
     }
 
-    // public static function userExisting($email, $username, $entityManager)
+    // public static function userExisting(string $email, string $username, $entityManager)
     // {
     //     $emailExisting = $entityManager->getRepository(Users::class)->findOneBy(['email' => $email]);
     //     $usernameExisting = $entityManager->getRepository(Users::class)->findOneBy(['username' => $username]);
