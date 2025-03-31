@@ -1,36 +1,50 @@
-# Utilizar una imagen base de PHP
 FROM php:8.2-fpm
 
-# Crear un usuario y grupo para el contenedor
-RUN groupadd -g 1000 symfony && useradd -u 1000 -g symfony -m symfony
-
-# Instalar las dependencias necesarias (Git, unzip y dependencias para MySQL)
-RUN apt-get update && apt-get install -y git unzip libpq-dev libicu-dev \
-    && docker-php-ext-install pdo pdo_mysql intl opcache \
+# Instalar dependencias del sistema
+RUN apt-get update && apt-get install -y \
+    git \
+    unzip \
+    libicu-dev \
+    libzip-dev \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libonig-dev \
+    libxml2-dev \
+    libssl-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+    pdo \
+    pdo_mysql \
+    mysqli \
+    intl \
+    gd \
+    opcache \
+    zip \
+    mbstring \
+    xml \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Instalar Symfony CLI
-RUN curl -sS https://get.symfony.com/cli/installer | bash
-RUN mv /root/.symfony*/bin/symfony /usr/local/bin/symfony
-
 # Instalar Composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+RUN curl -sS https://getcomposer.org/installer | php -- \
+    --install-dir=/usr/local/bin --filename=composer
 
-# Establecer el directorio de trabajo y copiar los archivos
+# Crear usuario y directorio
+RUN groupadd -g 1000 symfony && \
+    useradd -u 1000 -g symfony -m symfony && \
+    mkdir -p /var/www/html && \
+    chown symfony:symfony /var/www/html
+
 WORKDIR /var/www/html
-COPY . .
 
-# Cambiar los permisos del directorio assets
-RUN mkdir -p /var/www/html/assets && chmod -R 777 /var/www/html/assets
+# Copiar archivos como root temporalmente
+COPY --chown=symfony:symfony . .
 
-# Cambiar a un usuario no root para evitar problemas de permisos
 USER symfony
 
-# Instalar las dependencias de Composer
+# Instalar dependencias
 RUN composer install --no-dev --optimize-autoloader
 
-# Exponer el puerto 10000
 EXPOSE 10000
 
-# Comando para ejecutar el servidor PHP
 CMD ["php", "-S", "0.0.0.0:10000", "-t", "public"]
