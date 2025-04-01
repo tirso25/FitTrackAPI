@@ -1,14 +1,22 @@
 # Utilizar una imagen base de PHP
 FROM php:8.2-fpm
 
-# Crear un usuario y grupo para el contenedor
-RUN groupadd -g 1000 symfony && useradd -u 1000 -g symfony -m symfony
+# Actualizar índices de paquetes primero
+RUN apt-get update && apt-get install -y \
+    gnupg \
+    gosu \
+    curl \
+    ca-certificates \
+    git \
+    unzip
+
+# Añadir repositorio de MySQL oficial
+RUN curl -sSL https://repo.mysql.com/RPM-GPG-KEY-mysql-2022 | gpg --dearmor > /usr/share/keyrings/mysql.gpg
+RUN echo "deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/debian/ $(lsb_release -sc) mysql-8.0" > /etc/apt/sources.list.d/mysql.list
 
 # Instalar dependencias para MySQL 8.0
 RUN apt-get update && apt-get install -y \
-    git \
-    unzip \
-    default-mysql-client \
+    mysql-client \
     libmysqlclient-dev \
     && docker-php-ext-install pdo pdo_mysql \
     && docker-php-ext-enable pdo_mysql
