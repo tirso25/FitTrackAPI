@@ -1,8 +1,9 @@
-# Utilizar una imagen base de PHP con Alpine (más ligera y con menos problemas de dependencias)
+# Utilizar una imagen base de PHP con Alpine
 FROM php:8.2-fpm-alpine
 
-# Instalar dependencias básicas
+# Instalar dependencias básicas incluyendo bash
 RUN apk add --no-cache \
+    bash \
     git \
     unzip \
     curl \
@@ -11,9 +12,10 @@ RUN apk add --no-cache \
     && docker-php-ext-install pdo pdo_mysql \
     && docker-php-ext-enable pdo_mysql
 
-# Instalar Symfony CLI
-RUN curl -sS https://get.symfony.com/cli/installer | bash \
-    && mv /root/.symfony5/bin/symfony /usr/local/bin/symfony
+# Instalar Symfony CLI (versión alternativa compatible con Alpine)
+RUN curl -sS https://get.symfony.com/cli/installer -o installer \
+    && chmod +x installer \
+    && ./installer --install-dir=/usr/local/bin
 
 # Instalar Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
@@ -24,7 +26,7 @@ RUN addgroup -g 1000 symfony && adduser -u 1000 -G symfony -D symfony
 # Establecer directorio de trabajo
 WORKDIR /var/www/html
 
-# Copiar archivos (excepto lo excluido en .dockerignore)
+# Copiar archivos
 COPY --chown=symfony:symfony . .
 
 # Configurar permisos
@@ -35,7 +37,7 @@ RUN mkdir -p var public/assets \
 # Cambiar a usuario no root
 USER symfony
 
-# Instalar dependencias de Composer (sin dev)
+# Instalar dependencias de Composer
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Exponer puerto
