@@ -1,43 +1,41 @@
-# Imagen base con PHP 8.2 y FPM
+# Utilizar una imagen base de PHP
 FROM php:8.2-fpm
 
-# Instalar dependencias del sistema
+# Crear un usuario y grupo para el contenedor
+RUN groupadd -g 1000 symfony && useradd -u 1000 -g symfony -m symfony
+
+# Instalar dependencias para MySQL 8.0
 RUN apt-get update && apt-get install -y \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    libonig-dev \
-    libzip-dev \
+    git \
     unzip \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd zip pdo pdo_mysql
+    default-mysql-client \
+    libmysqlclient-dev \
+    && docker-php-ext-install pdo pdo_mysql \
+    && docker-php-ext-enable pdo_mysql
+
+# Instalar Symfony CLI
+RUN curl -sS https://get.symfony.com/cli/installer | bash
+RUN mv /root/.symfony*/bin/symfony /usr/local/bin/symfony
 
 # Instalar Composer
-RUN curl -sS https://getcomposer.org/installer | php -- \
-    --install-dir=/usr/local/bin --filename=composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Crear usuario y directorio de trabajo
-RUN groupadd -g 1000 symfony && \
-    useradd -u 1000 -g symfony -m symfony && \
-    mkdir -p /var/www/html && \
-    chown symfony:symfony /var/www/html
-
+# Establecer directorio de trabajo
 WORKDIR /var/www/html
+COPY . .
 
-# Copiar archivos con permisos correctos
-COPY --chown=symfony:symfony . .
+# Configurar permisos
+RUN mkdir -p /var/www/html/assets && chmod -R 777 /var/www/html/assets
+RUN mkdir -p /var/www/html/var && chmod -R 777 /var/www/html/var
 
-# Cambiar a usuario Symfony
+# Usuario no root
 USER symfony
 
-# Instalar dependencias con Composer
+# Instalar dependencias
 RUN composer install --no-dev --optimize-autoloader
 
-# Limpiar caché de Symfony (por si hay configuraciones antiguas)
-RUN php bin/console cache:clear --no-warmup
+# Exponer puerto
+EXPOSE 10000
 
-# Exponer el puerto de la aplicación
-EXPOSE 80
-
-# Comando de arranque del contenedor
+# Comando de inicio
 CMD ["php", "-S", "0.0.0.0:10000", "-t", "public"]
