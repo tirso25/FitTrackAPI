@@ -19,7 +19,7 @@ class UsersController extends AbstractController
         $users = $entityManager->getRepository(Users::class)->findAll();
 
         if (!$users) {
-            return $this->json(['alert' => 'No users found'], Response::HTTP_OK);
+            return $this->json(['type' => 'warning', 'message' => 'No users found'], Response::HTTP_OK);
         }
 
         $data = [];
@@ -44,7 +44,7 @@ class UsersController extends AbstractController
         $user = $entityManager->find(Users::class, $id);
 
         if (!$user) {
-            return $this->json(['error' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
         }
 
         $data[] = [
@@ -73,27 +73,27 @@ class UsersController extends AbstractController
         $username_regex = "/^[a-z0-9]{5,20}$/";
 
         if (empty($email) || empty($username) || empty($password) || empty($repeatPassword)) {
-            return $this->json(['error' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 255) {
-            return $this->json(['error' => 'Invalid email format'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'Invalid email format'], Response::HTTP_BAD_REQUEST);
         }
 
         if (!preg_match($password_regex, $password) || !preg_match($password_regex, $repeatPassword)) {
-            return $this->json(['error' => 'Invalid password format'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'Invalid password format'], Response::HTTP_BAD_REQUEST);
         }
 
         if (!preg_match($username_regex, $username)) {
-            return $this->json(['error' => 'Invalid username format'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'Invalid username format'], Response::HTTP_BAD_REQUEST);
         }
 
         if (Users::userExisting($email, $username, $entityManager)) {
-            return $this->json(['error' => 'User already exists', Response::HTTP_BAD_REQUEST]);
+            return $this->json(['type' => 'error', 'message' => 'User already exists', Response::HTTP_BAD_REQUEST]);
         }
 
         if ($password !== $repeatPassword) {
-            return $this->json(['error' => 'Passwords dont match'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'Passwords dont match'], Response::HTTP_BAD_REQUEST);
         }
 
         $newUser = new Users();
@@ -107,7 +107,7 @@ class UsersController extends AbstractController
         $entityManager->persist($newUser);
         $entityManager->flush();
 
-        return $this->json(['success' => 'User successfully created'], Response::HTTP_CREATED);
+        return $this->json(['type' => 'success', 'message' => 'User successfully created'], Response::HTTP_CREATED);
     }
 
     #[Route('/singIn', name: 'api_singIn', methods: ['POST'])]
@@ -122,28 +122,47 @@ class UsersController extends AbstractController
         $username_regex = "/^[a-z0-9]{5,20}$/";
 
         if (empty($emailUsername) || empty($password)) {
-            return $this->json(['error' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
         }
 
         if (str_contains($emailUsername, '@')) {
             if (!filter_var($emailUsername, FILTER_VALIDATE_EMAIL) || strlen($emailUsername) > 255) {
-                return $this->json(['error' => 'Invalid email format'], Response::HTTP_BAD_REQUEST);
+                return $this->json(['type' => 'error', 'message' => 'Invalid email format'], Response::HTTP_BAD_REQUEST);
             }
         } else {
             if (!preg_match($username_regex, $emailUsername)) {
-                return $this->json(['error' => 'Invalid username format'], Response::HTTP_BAD_REQUEST);
+                return $this->json(['type' => 'error', 'message' => 'Invalid username format'], Response::HTTP_BAD_REQUEST);
             }
         }
 
         if (!preg_match($password_regex, $password)) {
-            return $this->json(['error' => 'Invalid password format'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'Invalid password format'], Response::HTTP_BAD_REQUEST);
         }
 
         if (!Users::passwordsMatch($emailUsername, $password, $entityManager)) {
-            return $this->json(['error' => 'User or password doesnt match'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'User or password doesnt match'], Response::HTTP_BAD_REQUEST);
         }
 
-        return $this->json(['success' => 'Session successfully started'], Response::HTTP_OK);
+        $id_user = Users::getIdUser($emailUsername, $entityManager);
+
+        if (!$id_user) {
+            return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
+        }
+
+        session_start();
+        $_SESSION['id_user'] = $id_user;
+
+        return $this->json(['type' => 'success', 'message' => 'Session successfully started'], Response::HTTP_OK);
+    }
+
+    #[Route('/signOut', name: 'api_signOut', methods: ['POST'])]
+    public function signOut(): JsonResponse
+    {
+        session_start();
+
+        unset($_SESSION['id_user']);
+
+        return $this->json(['type' => 'success', 'message' => 'Session successfully ended'], Response::HTTP_OK);
     }
 
     #[Route('/deleteUser/{id<\d+>}', name: 'api_deleteUser', methods: ['DELETE', 'POST'])]
@@ -152,14 +171,14 @@ class UsersController extends AbstractController
         $delUser = $entityManager->find(Users::class, $id);
 
         if (!$delUser) {
-            return $this->json(['error' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
         }
 
         $delUser->setActive(false);
         $entityManager->flush();
 
 
-        return $this->json(['success' => 'User successfully deleted'], Response::HTTP_CREATED);
+        return $this->json(['type' => 'success', 'message' => 'User successfully deleted'], Response::HTTP_CREATED);
     }
 
     #[Route('/modifyUser/{id<\d+>}', name: 'api_modifyUser', methods: ['PUT', 'POST'])]
@@ -170,7 +189,7 @@ class UsersController extends AbstractController
         //!VER TEMA COMPROBAR QUE EL ID QUE SE PASA POR LA URL SEA EL MISMO QUE EL DEL USUARIO QUE LO SOLICITA SOLO PARA LOS USUARIOS NO SE PUEDE HACER CON EL ADMIN YA QUE EL PUEDE MODIFICAR LOS PERFILES DE LOS USUARIOS POR EJEMPLO PARA MODIFICAR EL ROLE
 
         if (!$user) {
-            return $this->json(['error' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
         }
 
         $data = json_decode($request->getContent(), true);
@@ -184,22 +203,22 @@ class UsersController extends AbstractController
         $role_regex = "/^[A-Z0-9]{1,5}$/";
 
         if (empty($username)) {
-            return $this->json(['error' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
         }
 
         if (!preg_match($username_regex, $username)) {
-            return $this->json(['error' => 'Invalid username format'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'Invalid username format'], Response::HTTP_BAD_REQUEST);
         }
 
         if (Users::userExisting2($id, $username, $entityManager)) {
-            return $this->json(['error' => 'User already exists', Response::HTTP_BAD_REQUEST]);
+            return $this->json(['type' => 'error', 'message' => 'User already exists', Response::HTTP_BAD_REQUEST]);
         }
 
         $user->setUsername($username);
 
         if (!empty($password)) {
             if (!preg_match($password_regex, $password)) {
-                return $this->json(['error' => 'Invalid password format'], Response::HTTP_BAD_REQUEST);
+                return $this->json(['type' => 'error', 'message' => 'Invalid password format'], Response::HTTP_BAD_REQUEST);
             }
 
             $hashedPassword = Users::hashPassword($password);
@@ -208,13 +227,13 @@ class UsersController extends AbstractController
 
         if (!empty($role)) {
             if (!in_array($role, ['ADMIN', 'USER', 'COACH']) || !preg_match($role_regex, $role)) {
-                return $this->json(['error' => 'Invalid role'], Response::HTTP_BAD_REQUEST);
+                return $this->json(['type' => 'error', 'message' => 'Invalid role'], Response::HTTP_BAD_REQUEST);
             }
             $user->setRole($role);
         }
 
         $entityManager->flush();
 
-        return $this->json(['success' => 'User successfully updated'], Response::HTTP_CREATED);
+        return $this->json(['type' => 'success', 'message' => 'User successfully updated'], Response::HTTP_CREATED);
     }
 }

@@ -20,7 +20,7 @@ class ExercisesController extends AbstractController
         $exercises = $entityManager->getRepository(Exercises::class)->findAll();
 
         if (!$exercises) {
-            return $this->json(['error' => 'No exercises found'], Response::HTTP_OK);
+            return $this->json(['type' => 'warning', 'message' => 'No exercises found'], Response::HTTP_OK);
         }
 
         $data = [];
@@ -46,8 +46,8 @@ class ExercisesController extends AbstractController
             'SELECT e FROM App\Entity\Exercises e WHERE e.active = true'
         )->getResult();
 
-        if (empty($exercises)) {
-            return $this->json(['error' => 'No exercises found'], Response::HTTP_OK);
+        if (!$exercises) {
+            return $this->json(['type' => 'warning', 'message' => 'No exercises found'], Response::HTTP_OK);
         }
 
         $data = [];
@@ -71,7 +71,7 @@ class ExercisesController extends AbstractController
         $excercise = $entityManager->find(Exercises::class, $id);
 
         if (!$excercise) {
-            return $this->json(['error' => 'The excercise does not exist'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'The excercise does not exist'], Response::HTTP_BAD_REQUEST);
         }
 
         $data[] = [
@@ -99,23 +99,23 @@ class ExercisesController extends AbstractController
         $category_regex = "/^[A-Z0-9]{1,10}$/";
 
         if (empty($name) || empty($description) || empty($category)) {
-            return $this->json(['error' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
         }
 
         if (!preg_match($name_regex, $name)) {
-            return $this->json(['error' => 'Invalid name format'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'Invalid name format'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (strlen($description) > 500 || strlen($description) < 10) {
-            return $this->json(['error' => 'Invalid description format'], Response::HTTP_BAD_REQUEST);
+        if (strlen($description) > 500 || strlen($description) < 9) {
+            return $this->json(['type' => 'error', 'message' => 'Invalid description format'], Response::HTTP_BAD_REQUEST);
         }
 
         if (Exercises::exerciseExisting($name, $entityManager)) {
-            return $this->json(['error' => 'Exercise already exists'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'Exercise already exists'], Response::HTTP_BAD_REQUEST);
         }
 
         if (!in_array($category, ['CHEST', 'SHOULDER', 'TRICEPS', 'BACK', 'BICEPS', 'ABDOMINALS', 'FEMORAL', 'QUADRICEPS', 'CALVES']) || !preg_match($category_regex, $category)) {
-            return $this->json(['error' => 'Invalid category'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'Invalid category'], Response::HTTP_BAD_REQUEST);
         }
 
         $exercise = new Exercises();
@@ -128,7 +128,7 @@ class ExercisesController extends AbstractController
         $entityManager->persist($exercise);
         $entityManager->flush();
 
-        return $this->json(['success' => 'Exercise successfully created'], Response::HTTP_CREATED);
+        return $this->json(['type' => 'success', 'message' => 'Exercise successfully created'], Response::HTTP_CREATED);
     }
 
     #[Route('/deleteExercise/{id<\d+>}', name: 'api_deleteExercise', methods: ['DELETE', 'POST'])]
@@ -137,13 +137,13 @@ class ExercisesController extends AbstractController
         $delexercise = $entityManager->find(Exercises::class, $id);
 
         if (!$delexercise) {
-            return $this->json(['error' => 'The exercise does not exist'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'The exercise does not exist'], Response::HTTP_BAD_REQUEST);
         }
 
         $delexercise->setActive(false);
         $entityManager->flush();
 
-        return $this->json(['success' => 'Exercise successfully deleted'], Response::HTTP_CREATED);
+        return $this->json(['type' => 'success', 'message' => 'Exercise successfully deleted'], Response::HTTP_CREATED);
     }
 
     #[Route('/modifyExercise/{id<\d+>}', name: 'api_modifyExercise', methods: ['POST', 'PUT'])]
@@ -152,7 +152,7 @@ class ExercisesController extends AbstractController
         $excercise = $entityManager->find(Exercises::class, $id);
 
         if (!$excercise) {
-            return $this->json(['error' => 'The exercise does not exist'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'The exercise does not exist'], Response::HTTP_BAD_REQUEST);
         }
 
         $data = json_decode($request->getContent(), true);
@@ -165,23 +165,23 @@ class ExercisesController extends AbstractController
         $category_regex = "/^[A-Z0-9]{1,10}$/";
 
         if (empty($name) || empty($description) || empty($category)) {
-            return $this->json(['error' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
         }
 
         if (Exercises::exerciseExisting2($id, $name, $entityManager)) {
-            return $this->json(['error' => 'Exercise already exists', Response::HTTP_BAD_REQUEST]);
+            return $this->json(['type' => 'error', 'message' => 'Exercise already exists', Response::HTTP_BAD_REQUEST]);
         }
 
         if (!preg_match($name_regex, $name)) {
-            return $this->json(['error' => 'Invalid name format'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'Invalid name format'], Response::HTTP_BAD_REQUEST);
         }
 
         if (strlen($description) > 500 || strlen($description) < 10) {
-            return $this->json(['error' => 'Invalid description format'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'Invalid description format'], Response::HTTP_BAD_REQUEST);
         }
 
         if (!in_array($category, ['CHEST', 'SHOULDER', 'TRICEPS', 'BACK', 'BICEPS', 'ABDOMINALS', 'FEMORAL', 'QUADRICEPS', 'CALVES']) || !preg_match($category_regex, $category)) {
-            return $this->json(['error' => 'Invalid category'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'Invalid category'], Response::HTTP_BAD_REQUEST);
         }
 
         $excercise->setName($name);
@@ -190,6 +190,6 @@ class ExercisesController extends AbstractController
 
         $entityManager->flush();
 
-        return $this->json(['success' => 'Exercise successfully updated'], Response::HTTP_CREATED);
+        return $this->json(['type' => 'success', 'message' => 'Exercise successfully updated'], Response::HTTP_CREATED);
     }
 }

@@ -5,16 +5,16 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
-#[ORM\Table(name: 'exercisesxuser')]
+#[ORM\Table(name: 'exercises_user')]
 class ExercisesXUser
 {
     #[ORM\Id]
-    #[ORM\ManyToOne(targetEntity: Users::class, inversedBy: 'exercisesXUser')]
+    #[ORM\ManyToOne(targetEntity: Users::class, inversedBy: 'exercises_user')]
     #[ORM\JoinColumn(name: 'id_usr', referencedColumnName: 'id_usr', nullable: false)]
     private ?Users $user = null;
 
     #[ORM\Id]
-    #[ORM\ManyToOne(targetEntity: Exercises::class, inversedBy: 'exercisesXUser')]
+    #[ORM\ManyToOne(targetEntity: Exercises::class, inversedBy: 'exercises_user')]
     #[ORM\JoinColumn(name: 'id_exe', referencedColumnName: 'id_exe', nullable: false)]
     private ?Exercises $exercise = null;
 
