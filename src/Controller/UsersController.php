@@ -10,6 +10,8 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
+//!SECURIZAR EN CUANTO A role
+
 #[Route('/api/users')]
 class UsersController extends AbstractController
 {
@@ -89,7 +91,7 @@ class UsersController extends AbstractController
         }
 
         if (Users::userExisting($email, $username, $entityManager)) {
-            return $this->json(['type' => 'error', 'message' => 'User already exists', Response::HTTP_BAD_REQUEST]);
+            return $this->json(['type' => 'error', 'message' => 'User already exists'], Response::HTTP_BAD_REQUEST);
         }
 
         if ($password !== $repeatPassword) {
@@ -115,22 +117,22 @@ class UsersController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        $emailUsername = Users::validate(strtolower($data['emailUsername']));
+        $email = Users::validate(strtolower($data['email']));
         $password = Users::validate($data['password']);
 
         $password_regex = "/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{5,}$/";
         $username_regex = "/^[a-z0-9]{5,20}$/";
 
-        if (empty($emailUsername) || empty($password)) {
+        if (empty($email) || empty($password)) {
             return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (str_contains($emailUsername, '@')) {
-            if (!filter_var($emailUsername, FILTER_VALIDATE_EMAIL) || strlen($emailUsername) > 255) {
+        if (str_contains($email, '@')) {
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 255) {
                 return $this->json(['type' => 'error', 'message' => 'Invalid email format'], Response::HTTP_BAD_REQUEST);
             }
         } else {
-            if (!preg_match($username_regex, $emailUsername)) {
+            if (!preg_match($username_regex, $email)) {
                 return $this->json(['type' => 'error', 'message' => 'Invalid username format'], Response::HTTP_BAD_REQUEST);
             }
         }
@@ -139,11 +141,11 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'Invalid password format'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!Users::passwordsMatch($emailUsername, $password, $entityManager)) {
+        if (!Users::passwordsMatch($email, $password, $entityManager)) {
             return $this->json(['type' => 'error', 'message' => 'User or password doesnt match'], Response::HTTP_BAD_REQUEST);
         }
 
-        $id_user = Users::getIdUser($emailUsername, $entityManager);
+        $id_user = Users::getIdUser($email, $entityManager);
 
         if (!$id_user) {
             return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
@@ -181,7 +183,7 @@ class UsersController extends AbstractController
         return $this->json(['type' => 'success', 'message' => 'User successfully deleted'], Response::HTTP_CREATED);
     }
 
-    #[Route('/modifyUser/{id<\d+>}', name: 'api_modifyUser', methods: ['PUT', 'POST'])]
+    #[Route('/modifyUser/{id<\d+>}', name: 'api_modifyUser', methods: ['PUT', 'POST', 'GET'])]
     public function modifyUser(EntityManagerInterface $entityManager, Request $request, int $id): JsonResponse
     {
         $user = $entityManager->find(Users::class, $id);
@@ -192,48 +194,63 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
         }
 
-        $data = json_decode($request->getContent(), true);
+        if ($request->isMethod('POST') || $request->isMethod('PUT')) {
+            $data = json_decode($request->getContent(), true);
 
-        $username = Users::validate(strtolower($data['username']));
-        $password = Users::validate($data['password']);
-        $role = Users::validate($data['role']);
+            $username = Users::validate(strtolower($data['username']));
+            $password = Users::validate($data['password']);
+            $role = Users::validate($data['role']);
 
-        $password_regex = "/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{5,}$/";
-        $username_regex = "/^[a-z0-9]{5,20}$/";
-        $role_regex = "/^[A-Z0-9]{1,5}$/";
+            $password_regex = "/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{5,}$/";
+            $username_regex = "/^[a-z0-9]{5,20}$/";
+            $role_regex = "/^[A-Z0-9]{1,5}$/";
 
-        if (empty($username)) {
-            return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
-        }
-
-        if (!preg_match($username_regex, $username)) {
-            return $this->json(['type' => 'error', 'message' => 'Invalid username format'], Response::HTTP_BAD_REQUEST);
-        }
-
-        if (Users::userExisting2($id, $username, $entityManager)) {
-            return $this->json(['type' => 'error', 'message' => 'User already exists', Response::HTTP_BAD_REQUEST]);
-        }
-
-        $user->setUsername($username);
-
-        if (!empty($password)) {
-            if (!preg_match($password_regex, $password)) {
-                return $this->json(['type' => 'error', 'message' => 'Invalid password format'], Response::HTTP_BAD_REQUEST);
+            if (empty($username)) {
+                return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
             }
 
-            $hashedPassword = Users::hashPassword($password);
-            $user->setPassword($hashedPassword);
-        }
-
-        if (!empty($role)) {
-            if (!in_array($role, ['ADMIN', 'USER', 'COACH']) || !preg_match($role_regex, $role)) {
-                return $this->json(['type' => 'error', 'message' => 'Invalid role'], Response::HTTP_BAD_REQUEST);
+            if (!preg_match($username_regex, $username)) {
+                return $this->json(['type' => 'error', 'message' => 'Invalid username format'], Response::HTTP_BAD_REQUEST);
             }
-            $user->setRole($role);
+
+            if (Users::userExisting2($id, $username, $entityManager)) {
+                return $this->json(['type' => 'error', 'message' => 'User already exists'], Response::HTTP_BAD_REQUEST);
+            }
+
+            $user->setUsername($username);
+
+            if (!empty($password)) {
+                if (!preg_match($password_regex, $password)) {
+                    return $this->json(['type' => 'error', 'message' => 'Invalid password format'], Response::HTTP_BAD_REQUEST);
+                }
+
+                $hashedPassword = Users::hashPassword($password);
+                $user->setPassword($hashedPassword);
+            }
+
+            if (!empty($role)) {
+                if (!in_array($role, ['ADMIN', 'USER', 'COACH']) || !preg_match($role_regex, $role)) {
+                    return $this->json(['type' => 'error', 'message' => 'Invalid role'], Response::HTTP_BAD_REQUEST);
+                }
+                $user->setRole($role);
+            }
+
+            $entityManager->flush();
+
+            return $this->json(['type' => 'success', 'message' => 'User successfully updated'], Response::HTTP_CREATED);
+        } elseif ($request->isMethod('GET')) {
+            $data[] = [
+                'id_usr' => $user->getIdUsr(),
+                'email' => $user->getEmail(),
+                'username' => $user->getUsername(),
+                'password' => $user->getPassword(),
+                'role' => $user->getRole(),
+                'roles' => ['ADMIN', 'USER', 'COACH']
+            ];
+
+            return $this->json($data, Response::HTTP_OK);
+        } else {
+            return $this->json(['type' => 'error', 'message' => 'Method not allowed'], Response::HTTP_METHOD_NOT_ALLOWED);
         }
-
-        $entityManager->flush();
-
-        return $this->json(['type' => 'success', 'message' => 'User successfully updated'], Response::HTTP_CREATED);
     }
 }
