@@ -36,7 +36,7 @@ class Users
     #[Assert\NotBlank]
     private ?string $password = null;
 
-    #[ORM\Column(length: 5, type: Types::STRING)]
+    #[ORM\Column(length: 255, type: Types::STRING)]
     private ?string $role = null;
 
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]

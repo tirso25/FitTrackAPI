@@ -103,7 +103,7 @@ class UsersController extends AbstractController
         $newUser->setEmail($email);
         $newUser->setUsername($username);
         $newUser->setPassword(Users::hashPassword($password));
-        $newUser->setRole('USER');
+        $newUser->setRole('ROLE_USER');
         $newUser->setActive(true);
 
         $entityManager->persist($newUser);
@@ -186,6 +186,8 @@ class UsersController extends AbstractController
     #[Route('/modifyUser/{id<\d+>}', name: 'api_modifyUser', methods: ['PUT', 'POST', 'GET'])]
     public function modifyUser(EntityManagerInterface $entityManager, Request $request, int $id): JsonResponse
     {
+        session_start();
+
         $user = $entityManager->find(Users::class, $id);
 
         //!VER TEMA COMPROBAR QUE EL ID QUE SE PASA POR LA URL SEA EL MISMO QUE EL DEL USUARIO QUE LO SOLICITA SOLO PARA LOS USUARIOS NO SE PUEDE HACER CON EL ADMIN YA QUE EL PUEDE MODIFICAR LOS PERFILES DE LOS USUARIOS POR EJEMPLO PARA MODIFICAR EL ROLE
@@ -203,7 +205,7 @@ class UsersController extends AbstractController
 
             $password_regex = "/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{5,}$/";
             $username_regex = "/^[a-z0-9]{5,20}$/";
-            $role_regex = "/^[A-Z0-9]{1,5}$/";
+            $role_regex = "/^[A-Z0-9]{1,255}$/";
 
             if (empty($username)) {
                 return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
