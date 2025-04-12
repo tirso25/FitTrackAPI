@@ -31,9 +31,9 @@ class UsersController extends AbstractController
                 'id_usr' => $user->getIdUsr(),
                 'email' => $user->getEmail(),
                 'username' => $user->getUsername(),
-                'password' => $user->getPassword(),
                 'role' => $user->getRole(),
-                'active' => $user->getActive()
+                'active' => $user->getActive(),
+                'date_union' => $user->getDateUnion()
             ];
         }
 
@@ -43,20 +43,38 @@ class UsersController extends AbstractController
     #[Route('/seeOneUser/{id<\d+>}', name: 'api_seeOneUser', methods: ['GET'])]
     public function seeOneUser(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
-        $user = $entityManager->find(Users::class, $id);
+        session_start();
+        $id_user = $_SESSION["id_user"];
+
+        $user = $entityManager->getRepository(Users::class)->findOneBy(['id_usr' => $id]);
+        $thisUser = $entityManager->getRepository(Users::class)->findOneBy(['id_usr' => $id_user]);
 
         if (!$user) {
             return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
         }
 
-        $data[] = [
-            'id_usr' => $user->getIdUsr(),
-            'email' => $user->getEmail(),
-            'username' => $user->getUsername(),
-            'password' => $user->getPassword(),
-            'role' => $user->getRole(),
-            'active' => $user->getActive()
-        ];
+        $data = [];
+
+        $role_user = $thisUser->getRole();
+        //!!SE PODRÍA USAR PARA QUE LOS USUARIOS PUEDAN VER LOS PERFILES DE OTROS
+
+        //!HABLAR SOBRE SI ES BUENA IDEA MANDAR EL ID O Q SOLO SE ENVIE EL NOMBRE Y LUEGO SI SE NECESITA EL ID HACER UN findOneBy CON EL username
+        if ($role_user === "ROLE_USER" && $id_user !== $id) {
+            $data[] = [
+                'id_usr' => $user->getIdUsr(),
+                'username' => $user->getUsername()
+            ];
+        } else {
+            $data[] = [
+                'id_usr' => $user->getIdUsr(),
+                'email' => $user->getEmail(),
+                'username' => $user->getUsername(),
+                'password' => $user->getPassword(),
+                'role' => $user->getRole(),
+                'active' => $user->getActive(),
+                'date_union' => $user->getDateUnion()
+            ];
+        }
 
         return $this->json($data, Response::HTTP_OK);
     }
@@ -105,6 +123,7 @@ class UsersController extends AbstractController
         $newUser->setPassword(Users::hashPassword($password));
         $newUser->setRole('ROLE_USER');
         $newUser->setActive(true);
+        $newUser->setDateUnion(new \DateTime());
 
         $entityManager->persist($newUser);
         $entityManager->flush();
@@ -119,11 +138,14 @@ class UsersController extends AbstractController
 
         $email = Users::validate(strtolower($data['email']));
         $password = Users::validate($data['password']);
+        $rememberme = isset($data['rememberme'])
+            ? filter_var($data['rememberme'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+            : null;
 
         $password_regex = "/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{5,}$/";
         $username_regex = "/^[a-z0-9]{5,20}$/";
 
-        if (empty($email) || empty($password)) {
+        if (empty($email) || empty($password) || $rememberme === null) {
             return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
         }
 
@@ -152,15 +174,48 @@ class UsersController extends AbstractController
         }
 
         session_start();
+
         $_SESSION['id_user'] = $id_user;
+
+        if ($rememberme === true) {
+            $token = Users::generatorToken();
+
+            Users::saveToken($entityManager, $id_user, $token);
+
+            setcookie("token", $token, time() + (3600 * 24 * 30));
+        } elseif ($rememberme == false) {
+            Users::removeToken($entityManager, $id_user);
+        }
 
         return $this->json(['type' => 'success', 'message' => 'Session successfully started'], Response::HTTP_OK);
     }
 
+    #[Route('/tokenExisting', name: 'app_tokenExisting', methods: ['POST'])]
+    public function tokenExisting(EntityManagerInterface $entityManager): JsonResponse
+    {
+        if (isset($_COOKIE['token'])) {
+            $token = $_COOKIE['token'];
+
+            $user = Users::tokenExisting($token, $entityManager);
+
+            if ($user) {
+                $_SESSION['id_user'] = $user->getIdUsr();
+                $username = $user->getUsername();
+
+                return $this->json(['type' => 'success', 'message' => "Welcome back $username!!!"]);
+            }
+        }
+        return $this->json(null, JsonResponse::HTTP_NO_CONTENT);
+    }
+
     #[Route('/signOut', name: 'api_signOut', methods: ['POST'])]
-    public function signOut(): JsonResponse
+    public function signOut(EntityManagerInterface $entityManager): JsonResponse
     {
         session_start();
+
+        Users::removeToken($entityManager, $_SESSION['id_user']);
+
+        setcookie("token", "", time() - 3600);
 
         unset($_SESSION['id_user']);
 
@@ -170,7 +225,7 @@ class UsersController extends AbstractController
     #[Route('/deleteUser/{id<\d+>}', name: 'api_deleteUser', methods: ['DELETE', 'POST'])]
     public function deleteUser(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
-        $delUser = $entityManager->find(Users::class, $id);
+        $delUser = $entityManager->getRepository(Users::class)->findOneBy(['id_usr' => $id]);
 
         if (!$delUser) {
             return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
@@ -187,13 +242,19 @@ class UsersController extends AbstractController
     public function modifyUser(EntityManagerInterface $entityManager, Request $request, int $id): JsonResponse
     {
         session_start();
+        $id_user = $_SESSION["id_user"];
 
-        $user = $entityManager->find(Users::class, $id);
-
-        //!VER TEMA COMPROBAR QUE EL ID QUE SE PASA POR LA URL SEA EL MISMO QUE EL DEL USUARIO QUE LO SOLICITA SOLO PARA LOS USUARIOS NO SE PUEDE HACER CON EL ADMIN YA QUE EL PUEDE MODIFICAR LOS PERFILES DE LOS USUARIOS POR EJEMPLO PARA MODIFICAR EL ROLE
+        $user = $entityManager->getRepository(Users::class)->findOneBy(['id_usr' => $id]);
+        $thisUser = $entityManager->getRepository(Users::class)->findOneBy(['id_usr' => $id_user]);
 
         if (!$user) {
             return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $role_user = $thisUser->getRole();
+
+        if ($role_user === "ROLE_USER" && $id_user !== $id) {
+            return $this->json(['type' => 'error', 'message' => 'The user does not match'], Response::HTTP_BAD_REQUEST);
         }
 
         if ($request->isMethod('POST') || $request->isMethod('PUT')) {
@@ -254,5 +315,12 @@ class UsersController extends AbstractController
         } else {
             return $this->json(['type' => 'error', 'message' => 'Method not allowed'], Response::HTTP_METHOD_NOT_ALLOWED);
         }
+    }
+
+    #[Route('/whoami', name: 'app_whoami', methods: ['GET'])]
+    public function whoami(): JsonResponse
+    {
+        session_start();
+        return $this->json(['ID' => $_SESSION['id_user']]);
     }
 }

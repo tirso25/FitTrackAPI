@@ -40,12 +40,12 @@ class Exercises
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
     private ?bool $active = null;
 
-    #[ORM\OneToMany(targetEntity: ExercisesXUser::class, mappedBy: 'exercise', orphanRemoval: true)]
-    private Collection $exercisesXUser;
+    #[ORM\OneToMany(targetEntity: FavoriteExercises::class, mappedBy: 'exercise', orphanRemoval: true)]
+    private Collection $favoriteExercises;
 
     public function __construct()
     {
-        $this->exercisesXUser = new ArrayCollection();
+        $this->favoriteExercises = new ArrayCollection();
     }
 
     public function getIdExe(): ?int
@@ -113,14 +113,14 @@ class Exercises
         return $this;
     }
 
-    public function getExercisesXUser(): Collection
+    public function getFavoriteExercises()
     {
-        return $this->exercisesXUser;
+        return $this->favoriteExercises;
     }
 
-    public function setExercisesXUser(Collection $exercisesXUser): static
+    public function setFavoriteExercises($favoriteExercises)
     {
-        $this->exercisesXUser = $exercisesXUser;
+        $this->favoriteExercises = $favoriteExercises;
 
         return $this;
     }

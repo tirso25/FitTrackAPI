@@ -42,12 +42,18 @@ class Users
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
     private ?bool $active = null;
 
-    #[ORM\OneToMany(targetEntity: ExercisesXUser::class, mappedBy: 'user', orphanRemoval: true)]
-    private Collection $exercisesXUser;
+    #[ORM\Column(length: 255, type: Types::STRING)]
+    private ?string $token = null;
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, options: ['default' => 'CURRENT_TIMESTAMP'])]
+    private ?\DateTime $dateUnion = null;
+
+    #[ORM\OneToMany(targetEntity: FavoriteExercises::class, mappedBy: 'user', orphanRemoval: true)]
+    private Collection $favoriteExercises;
 
     public function __construct()
     {
-        $this->exercisesXUser = new ArrayCollection();
+        $this->favoriteExercises = new ArrayCollection();
     }
 
     public function getIdUsr(): ?int
@@ -115,15 +121,38 @@ class Users
         return $this;
     }
 
-    public function getExercisesXUser(): Collection
+    public function getFavoriteExercises()
     {
-        return $this->exercisesXUser;
+        return $this->favoriteExercises;
     }
 
-    public function setExercisesXUser(Collection $exercisesXUser): static
+    public function setFavoriteExercises($favoriteExercises)
     {
-        $this->exercisesXUser = $exercisesXUser;
+        $this->favoriteExercises = $favoriteExercises;
 
+        return $this;
+    }
+
+    public function getToken(): ?string
+    {
+        return $this->token;
+    }
+
+    public function setToken($token)
+    {
+        $this->token = $token;
+
+        return $this;
+    }
+
+    public function getDateUnion()
+    {
+        return $this->dateUnion;
+    }
+
+    public function setDateUnion(?\DateTime $dateUnion = null): static
+    {
+        $this->dateUnion = $dateUnion;
         return $this;
     }
 
@@ -141,9 +170,38 @@ class Users
         return password_hash($password, PASSWORD_BCRYPT, $options);
     }
 
-    public static function passwordVerify(string $userPassword, $hashedPawword)
+    public static function passwordVerify(string $userPassword, string $hashedPawword)
     {
         return password_verify($userPassword, $hashedPawword);
+    }
+
+    public static function generatorToken()
+    {
+        return bin2hex(random_bytes(32));
+    }
+
+    public static function saveToken($entityManager, int $id_user, string $token)
+    {
+        $user = $entityManager->find(Users::class, $id_user);
+
+        $user->setToken($token);
+
+        $entityManager->flush();
+    }
+
+    public static function removeToken($entityManager, int $id_user)
+    {
+        $user = $entityManager->find(Users::class, $id_user);
+
+        $user->setToken(null);
+
+        $entityManager->flush();
+    }
+
+
+    public static function tokenExisting(string $token, $entityManager)
+    {
+        return $entityManager->getRepository(Users::class)->findOneBy(['token' => $token]);
     }
 
     // public static function userExisting(string $email, string $username, $entityManager)
@@ -190,7 +248,6 @@ class Users
 
         return $query->getOneOrNullResult() !== null;
     }
-
 
     public static function passwordsMatch(string $email, string $password, $entityManager)
     {
