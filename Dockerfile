@@ -4,13 +4,15 @@ FROM php:8.2-fpm-alpine as builder
 WORKDIR /var/www/html
 
 # Instalar dependencias CRÍTICAS para producción
-RUN apk update && \
-    apk add --no-cache \
+RUN apk add --no-cache \
     bash \
+    git \
+    unzip \
+    curl \
     mariadb-client \
-    mariadb-connector-c-dev && \
-    docker-php-ext-install pdo pdo_mysql && \
-    docker-php-ext-enable pdo_mysql
+    mariadb-connector-c-dev \
+    && docker-php-ext-install pdo pdo_mysql \
+    && docker-php-ext-enable pdo_mysql
 
 # Instalar Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
