@@ -23,8 +23,12 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 # Copiar solo los archivos necesarios para instalar dependencias
 COPY composer.json composer.lock symfony.lock ./
 
+# Instalar Symfony CLI (necesario para symfony-cmd)
+RUN curl -sS https://get.symfony.com/cli/installer | bash && \
+    mv /root/.symfony5/bin/symfony /usr/local/bin/symfony
+
 # Instalar dependencias de producción (sin dev)
-RUN composer install --no-dev --no-interaction --optimize-autoloader
+RUN composer install --no-dev --no-interaction --optimize-autoloader --ignore-platform-reqs
 
 # ----------------------------------
 # 2. Fase final (Runtime)
@@ -40,6 +44,7 @@ RUN addgroup -g 1000 symfony && \
 # Copiar dependencias instaladas desde la fase builder
 COPY --from=builder /var/www/html/vendor vendor/
 COPY --from=builder /usr/local/bin/composer /usr/local/bin/composer
+COPY --from=builder /usr/local/bin/symfony /usr/local/bin/symfony
 
 # Copiar el código de la aplicación
 COPY --chown=symfony:symfony bin bin/
@@ -49,6 +54,12 @@ COPY --chown=symfony:symfony src src/
 COPY --chown=symfony:symfony templates templates/
 COPY --chown=symfony:symfony translations translations/
 
+# Configurar permisos
+RUN mkdir -p var/cache var/log && \
+    chown -R symfony:symfony var && \
+    chmod -R 777 var
+
+# Generar .env dinámicamente
 RUN echo "APP_ENV=prod" > .env && \
     echo "APP_DEBUG=false" >> .env && \
     echo "DATABASE_URL=${DATABASE_URL}" >> .env && \
@@ -57,25 +68,17 @@ RUN echo "APP_ENV=prod" > .env && \
     echo "JWT_PASSPHRASE=${JWT_PASSPHRASE}" >> .env && \
     echo "MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=0" >> .env
 
-# Configurar permisos
-RUN mkdir -p var/cache var/log && \
-    chown -R symfony:symfony var && \
-    chmod -R 777 var
-
-# Si usas JWT, copia las claves desde Secret Files (Render)
-# COPY --chown=symfony:symfony /etc/secrets/private.pem config/jwt/private.pem
-# COPY --chown=symfony:symfony /etc/secrets/public.pem config/jwt/public.pem
-
-# Generar .env dinámicamente si prefieres usar variables de entorno
-RUN echo "APP_ENV=${APP_ENV:-prod}" > .env && \
-    echo "APP_DEBUG=${APP_DEBUG:-false}" >> .env && \
-    echo "DATABASE_URL=${DATABASE_URL}" >> .env && \
-    echo "JWT_PASSPHRASE=${JWT_PASSPHRASE}" >> .env
+# Si necesitas generar las claves JWT durante el build:
+RUN apk add --no-cache openssl && \
+    mkdir -p config/jwt && \
+    openssl genpkey -out config/jwt/private.pem -aes256 -algorithm rsa -pkeyopt rsa_keygen_bits:4096 -pass pass:${JWT_PASSPHRASE} && \
+    openssl pkey -in config/jwt/private.pem -out config/jwt/public.pem -pubout -passin pass:${JWT_PASSPHRASE} && \
+    chown -R symfony:symfony config/jwt
 
 USER symfony
 
-# Puerto expuesto (ajusta según tu configuración en Render)
+# Puerto expuesto
 EXPOSE 10000
 
-# Comando de inicio (para Render)
+# Comando de inicio
 CMD ["php", "-S", "0.0.0.0:10000", "-t", "public"]
