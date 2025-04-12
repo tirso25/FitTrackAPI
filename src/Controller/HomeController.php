@@ -64,6 +64,7 @@ class HomeController extends AbstractController
                     '/modifyUser/{id}' => 'You will be able to modify a user through the id, function for administrators and users',
                     '/tokenExisting' => 'Check if the user has clicked on remember me',
                     '/whoami' => 'You will be able to know who you are (the id)'
+
                 ],
                 '/api/exercises' => [
                     '/seeAllExercises' => 'You will be able to see all exercises in the database',
@@ -97,11 +98,8 @@ class HomeController extends AbstractController
                     '/seeOneUser/{id}' => 'You will be able to see the selected user by id, function for administrators and users',
                     '/signUp' => 'You can register in the app',
                     '/signIn' => 'You will be able to login to the app by email or username',
-                    '/signOut' => 'You will be able to log off',
                     '/deleteUser/{id}' => 'You will be able to delete/deactivate a user through the user id, function for administrators',
-                    '/modifyUser/{id}' => 'You will be able to modify a user through the id, function for administrators and users',
-                    '/tokenExisting' => 'Check if the user has clicked on remember me',
-                    '/whoami' => 'You will be able to know who you are (the id)'
+                    '/modifyUser/{id}' => 'You will be able to modify a user through the id, function for administrators and users'
                 ],
                 '/api/exercises' => [
                     '/seeAllExercises' => 'You will be able to see all exercises in the database',
