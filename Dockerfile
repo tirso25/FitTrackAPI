@@ -3,14 +3,10 @@ FROM php:8.2-fpm-alpine as builder
 
 WORKDIR /var/www/html
 
-# Instalar dependencias del sistema
+# Instalar dependencias CRÍTICAS para producción
 RUN apk update && \
     apk add --no-cache \
     bash \
-    git \
-    unzip \
-    curl \
-    openssl \
     mariadb-client \
     mariadb-connector-c-dev && \
     docker-php-ext-install pdo pdo_mysql && \
