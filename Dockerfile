@@ -1,6 +1,4 @@
-# ----------------------------------
-# 1. Fase de construcción (Build)
-# ----------------------------------
+
 FROM php:8.2-fpm-alpine as builder
 
 WORKDIR /var/www/html
@@ -35,9 +33,6 @@ RUN composer install --no-dev --no-interaction --optimize-autoloader --ignore-pl
 RUN mkdir -p var/cache var/log && \
     chmod -R 777 var
 
-# ----------------------------------
-# 2. Fase final (Runtime)
-# ----------------------------------
 FROM php:8.2-fpm-alpine
 
 WORKDIR /var/www/html
