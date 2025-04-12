@@ -1,20 +1,19 @@
-
+# ----------------------------------
+# 1. Fase de construcción (Build)
+# ----------------------------------
 FROM php:8.2-fpm-alpine as builder
 
 WORKDIR /var/www/html
 
-# Instalar dependencias CRÍTICAS para producción
+# Instalar dependencias de construcción
 RUN apk update && \
     apk add --no-cache \
     bash \
+    git \
+    unzip \
+    curl \
     mariadb-client \
-    mariadb-connector-c \  
-    && docker-php-ext-install pdo pdo_mysql \ 
-    && docker-php-ext-enable pdo_mysql
-
-# Crear usuario y grupo para la aplicación
-RUN addgroup -g 1000 symfony && \
-    adduser -u 1000 -G symfony -D symfony
+    mariadb-connector-c-dev
 
 # Instalar Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
@@ -26,23 +25,32 @@ ENV COMPOSER_MEMORY_LIMIT=-1
 # Copiar solo los archivos necesarios para instalar dependencias
 COPY composer.json composer.lock symfony.lock ./
 
-# Instalar dependencias de producción (sin dev)
+# Instalar dependencias de producción
 RUN composer install --no-dev --no-interaction --optimize-autoloader --ignore-platform-reqs --no-scripts
 
 # Configurar permisos temporales
 RUN mkdir -p var/cache var/log && \
     chmod -R 777 var
 
+# ----------------------------------
+# 2. Fase final (Runtime)
+# ----------------------------------
 FROM php:8.2-fpm-alpine
 
 WORKDIR /var/www/html
 
+# Instalar dependencias CRÍTICAS para runtime
+RUN apk update && \
+    apk add --no-cache \
+    bash \
+    mariadb-client \
+    mariadb-connector-c \
+    && docker-php-ext-install pdo pdo_mysql \
+    && docker-php-ext-enable pdo_mysql
+
 # Crear usuario y grupo para la aplicación
 RUN addgroup -g 1000 symfony && \
     adduser -u 1000 -G symfony -D symfony
-
-# Instalar dependencias del sistema necesarias para runtime
-RUN apk add --no-cache openssl
 
 # Copiar dependencias instaladas desde la fase builder
 COPY --from=builder /var/www/html/vendor vendor/
@@ -68,6 +76,7 @@ RUN echo "APP_ENV=prod" > .env && \
 # Generar claves JWT si no existen
 RUN mkdir -p config/jwt && \
     if [ ! -f config/jwt/private.pem ]; then \
+    apk add --no-cache openssl && \
     openssl genpkey -out config/jwt/private.pem -aes256 -algorithm rsa -pkeyopt rsa_keygen_bits:4096 -pass pass:${JWT_PASSPHRASE} && \
     openssl pkey -in config/jwt/private.pem -out config/jwt/public.pem -pubout -passin pass:${JWT_PASSPHRASE}; \
     fi && \
@@ -75,8 +84,6 @@ RUN mkdir -p config/jwt && \
 
 USER symfony
 
-# Puerto expuesto
 EXPOSE 10000
 
-# Comando de inicio
 CMD ["php", "-S", "0.0.0.0:10000", "-t", "public"]
