@@ -28,7 +28,7 @@ WORKDIR /var/www/html
 
 # Copiar archivos
 COPY --chown=symfony:symfony . .
-
+COPY --chown=symfony:symfony /etc/secrets/.env .env
 # Configurar permisos
 RUN mkdir -p var public/assets \
     && chown -R symfony:symfony var public/assets \
