@@ -12,6 +12,7 @@ RUN apk update && \
     git \
     unzip \
     curl \
+    openssl \
     mariadb-client \
     mariadb-connector-c-dev && \
     docker-php-ext-install pdo pdo_mysql && \
@@ -20,12 +21,16 @@ RUN apk update && \
 # Instalar Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
+# Instalar Symfony CLI
+RUN curl -sS https://get.symfony.com/cli/installer | bash && \
+    mv /root/.symfony5/bin/symfony /usr/local/bin/symfony
+
 # Copiar solo los archivos necesarios para instalar dependencias
 COPY composer.json composer.lock symfony.lock ./
 
-# Instalar Symfony CLI (necesario para symfony-cmd)
-RUN curl -sS https://get.symfony.com/cli/installer | bash && \
-    mv /root/.symfony5/bin/symfony /usr/local/bin/symfony
+# Configurar permisos temporales
+RUN mkdir -p var/cache var/log && \
+    chmod -R 777 var
 
 # Instalar dependencias de producción (sin dev)
 RUN composer install --no-dev --no-interaction --optimize-autoloader --ignore-platform-reqs
@@ -68,11 +73,13 @@ RUN echo "APP_ENV=prod" > .env && \
     echo "JWT_PASSPHRASE=${JWT_PASSPHRASE}" >> .env && \
     echo "MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=0" >> .env
 
-# Si necesitas generar las claves JWT durante el build:
-RUN apk add --no-cache openssl && \
-    mkdir -p config/jwt && \
+# Generar claves JWT si no existen
+RUN mkdir -p config/jwt && \
+    if [ ! -f config/jwt/private.pem ]; then \
+    apk add --no-cache openssl && \
     openssl genpkey -out config/jwt/private.pem -aes256 -algorithm rsa -pkeyopt rsa_keygen_bits:4096 -pass pass:${JWT_PASSPHRASE} && \
-    openssl pkey -in config/jwt/private.pem -out config/jwt/public.pem -pubout -passin pass:${JWT_PASSPHRASE} && \
+    openssl pkey -in config/jwt/private.pem -out config/jwt/public.pem -pubout -passin pass:${JWT_PASSPHRASE}; \
+    fi && \
     chown -R symfony:symfony config/jwt
 
 USER symfony
