@@ -4,15 +4,17 @@ FROM php:8.2-fpm-alpine as builder
 WORKDIR /var/www/html
 
 # Instalar dependencias CRÍTICAS para producción
-RUN apk add --no-cache \
+RUN apk update && \
+    apk add --no-cache \
     bash \
-    git \
-    unzip \
-    curl \
     mariadb-client \
-    mariadb-connector-c-dev \
-    && docker-php-ext-install pdo pdo_mysql \
+    mariadb-connector-c \  
+    && docker-php-ext-install pdo pdo_mysql \ 
     && docker-php-ext-enable pdo_mysql
+
+# Crear usuario y grupo para la aplicación
+RUN addgroup -g 1000 symfony && \
+    adduser -u 1000 -G symfony -D symfony
 
 # Instalar Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
