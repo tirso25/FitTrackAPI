@@ -48,7 +48,14 @@ COPY --chown=symfony:symfony public public/
 COPY --chown=symfony:symfony src src/
 COPY --chown=symfony:symfony templates templates/
 COPY --chown=symfony:symfony translations translations/
-COPY --chown=symfony:symfony .env .env
+
+RUN echo "APP_ENV=prod" > .env && \
+    echo "APP_DEBUG=false" >> .env && \
+    echo "DATABASE_URL=${DATABASE_URL}" >> .env && \
+    echo "JWT_SECRET_KEY=%kernel.project_dir%/config/jwt/private.pem" >> .env && \
+    echo "JWT_PUBLIC_KEY=%kernel.project_dir%/config/jwt/public.pem" >> .env && \
+    echo "JWT_PASSPHRASE=${JWT_PASSPHRASE}" >> .env && \
+    echo "MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=0" >> .env
 
 # Configurar permisos
 RUN mkdir -p var/cache var/log && \
