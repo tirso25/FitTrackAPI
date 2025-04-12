@@ -21,19 +21,19 @@ RUN apk update && \
 # Instalar Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Instalar Symfony CLI
-RUN curl -sS https://get.symfony.com/cli/installer | bash && \
-    mv /root/.symfony5/bin/symfony /usr/local/bin/symfony
+# Configurar variables de entorno para Composer
+ENV COMPOSER_ALLOW_SUPERUSER=1
+ENV COMPOSER_MEMORY_LIMIT=-1
 
 # Copiar solo los archivos necesarios para instalar dependencias
 COPY composer.json composer.lock symfony.lock ./
 
+# Instalar dependencias de producción (sin dev)
+RUN composer install --no-dev --no-interaction --optimize-autoloader --ignore-platform-reqs --no-scripts
+
 # Configurar permisos temporales
 RUN mkdir -p var/cache var/log && \
     chmod -R 777 var
-
-# Instalar dependencias de producción (sin dev)
-RUN composer install --no-dev --no-interaction --optimize-autoloader --ignore-platform-reqs
 
 # ----------------------------------
 # 2. Fase final (Runtime)
@@ -46,18 +46,15 @@ WORKDIR /var/www/html
 RUN addgroup -g 1000 symfony && \
     adduser -u 1000 -G symfony -D symfony
 
+# Instalar dependencias del sistema necesarias para runtime
+RUN apk add --no-cache openssl
+
 # Copiar dependencias instaladas desde la fase builder
 COPY --from=builder /var/www/html/vendor vendor/
 COPY --from=builder /usr/local/bin/composer /usr/local/bin/composer
-COPY --from=builder /usr/local/bin/symfony /usr/local/bin/symfony
 
 # Copiar el código de la aplicación
-COPY --chown=symfony:symfony bin bin/
-COPY --chown=symfony:symfony config config/
-COPY --chown=symfony:symfony public public/
-COPY --chown=symfony:symfony src src/
-COPY --chown=symfony:symfony templates templates/
-COPY --chown=symfony:symfony translations translations/
+COPY --chown=symfony:symfony . .
 
 # Configurar permisos
 RUN mkdir -p var/cache var/log && \
@@ -76,7 +73,6 @@ RUN echo "APP_ENV=prod" > .env && \
 # Generar claves JWT si no existen
 RUN mkdir -p config/jwt && \
     if [ ! -f config/jwt/private.pem ]; then \
-    apk add --no-cache openssl && \
     openssl genpkey -out config/jwt/private.pem -aes256 -algorithm rsa -pkeyopt rsa_keygen_bits:4096 -pass pass:${JWT_PASSPHRASE} && \
     openssl pkey -in config/jwt/private.pem -out config/jwt/public.pem -pubout -passin pass:${JWT_PASSPHRASE}; \
     fi && \
