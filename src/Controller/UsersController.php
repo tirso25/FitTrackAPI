@@ -190,6 +190,20 @@ class UsersController extends AbstractController
         return $this->json(['type' => 'success', 'message' => 'Session successfully started'], Response::HTTP_OK);
     }
 
+    #[Route('/signOut', name: 'api_signOut', methods: ['POST'])]
+    public function signOut(EntityManagerInterface $entityManager): JsonResponse
+    {
+        session_start();
+
+        Users::removeToken($entityManager, $_SESSION['id_user']);
+
+        setcookie("token", "", time() - 3600);
+
+        unset($_SESSION['id_user']);
+
+        return $this->json(['type' => 'success', 'message' => 'Session successfully ended'], Response::HTTP_OK);
+    }
+
     #[Route('/tokenExisting', name: 'app_tokenExisting', methods: ['POST'])]
     public function tokenExisting(EntityManagerInterface $entityManager): JsonResponse
     {
@@ -206,20 +220,6 @@ class UsersController extends AbstractController
             }
         }
         return $this->json(null, JsonResponse::HTTP_NO_CONTENT);
-    }
-
-    #[Route('/signOut', name: 'api_signOut', methods: ['POST'])]
-    public function signOut(EntityManagerInterface $entityManager): JsonResponse
-    {
-        session_start();
-
-        Users::removeToken($entityManager, $_SESSION['id_user']);
-
-        setcookie("token", "", time() - 3600);
-
-        unset($_SESSION['id_user']);
-
-        return $this->json(['type' => 'success', 'message' => 'Session successfully ended'], Response::HTTP_OK);
     }
 
     #[Route('/deleteUser/{id<\d+>}', name: 'api_deleteUser', methods: ['DELETE', 'POST'])]
@@ -292,7 +292,7 @@ class UsersController extends AbstractController
             }
 
             if (!empty($role)) {
-                if (!in_array($role, ['ADMIN', 'USER', 'COACH']) || !preg_match($role_regex, $role)) {
+                if (!in_array($role, ['ROLE_ADMIN', 'ROLE_USER', 'ROLE_COACH']) || !preg_match($role_regex, $role)) {
                     return $this->json(['type' => 'error', 'message' => 'Invalid role'], Response::HTTP_BAD_REQUEST);
                 }
                 $user->setRole($role);

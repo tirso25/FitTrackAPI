@@ -96,6 +96,7 @@ class ExercisesController extends AbstractController
         $category = Exercises::validate($data['category']);
 
         $name_regex = "/^[a-z0-9]{1,30}$/";
+        $description_regex = "/^[A-Z0-9]{10,500}$/";
         $category_regex = "/^[A-Z0-9]{1,10}$/";
 
         if (empty($name) || empty($description) || empty($category)) {
@@ -106,7 +107,7 @@ class ExercisesController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'Invalid name format'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (strlen($description) > 500 || strlen($description) < 9) {
+        if (preg_match($description_regex, $description)) {
             return $this->json(['type' => 'error', 'message' => 'Invalid description format'], Response::HTTP_BAD_REQUEST);
         }
 
@@ -146,7 +147,7 @@ class ExercisesController extends AbstractController
         return $this->json(['type' => 'success', 'message' => 'Exercise successfully deleted'], Response::HTTP_CREATED);
     }
 
-    #[Route('/modifyExercise/{id<\d+>}', name: 'api_modifyExercise', methods: ['POST', 'PUT'])]
+    #[Route('/modifyExercise/{id<\d+>}', name: 'api_modifyExercise', methods: ['PUT', 'POST',  'GET'])]
     public function modifyExercise(EntityManagerInterface $entityManager, Request $request, int $id): JsonResponse
     {
         $excercise = $entityManager->find(Exercises::class, $id);
