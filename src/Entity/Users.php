@@ -267,18 +267,17 @@ class Users
         return false;
     }
 
-    public static function getIdUser(string $emailUsername, $entityManager)
+    public static function getIdUser($emailUsernameId, $entityManager)
     {
         $query = $entityManager->createQuery(
-            'SELECT u.id_usr FROM App\Entity\Users u WHERE u.email = :emailUsername OR u.username = :emailUsername'
-        )->setParameter('emailUsername', $emailUsername);
+            'SELECT u.id_usr 
+            FROM App\Entity\Users u 
+            WHERE (u.email = :emailUsernameId OR u.username = :emailUsernameId OR u.id_usr = :emailUsernameId) 
+            AND u.active = true'
+        )
+            ->setParameter('emailUsernameId', $emailUsernameId)
+            ->getOneOrNullResult();
 
-        $id_user = $query->getSingleScalarResult();
-
-        if (!$id_user) {
-            return null;
-        }
-
-        return $id_user;
+        return $query ? $query['id_usr'] : null;
     }
 }
