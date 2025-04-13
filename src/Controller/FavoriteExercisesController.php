@@ -55,7 +55,7 @@ class FavoriteExercisesController extends AbstractController
         session_start();
         $id_user = $_SESSION["id_user"];
 
-        $user = $entityManager->find(Users::class, $id_user);
+        $user = Users::getIdUser($id_user, $entityManager);
 
         if (!$user) {
             return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
