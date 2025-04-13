@@ -107,89 +107,91 @@
         </div>
         <div class="card-body">
           <h2 class="h5 mb-3">API Endpoints Documentation</h2>
-
-          <!-- New Table for Specific Routes -->
           <h3 class="endpoint-title mt-4">Specific API Routes</h3>
-          <table class="table table-bordered table-striped">
-            <thead class="table-light">
-              <tr>
-                <th>Name</th>
-                <th>Method</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><b><span class="text-pastel-red">/api/info</span></b></td>
-                <td><span class="badge-method">-</span></td>
-                <td>The entry route about the API, such as version, status, etc.</td>
-              </tr>
-              <tr>
-                <td><b><span class="text-pastel-red">/api/users</span></b></td>
-                <td><span class="badge-method">-</span></td>
-                <td>The input path on the user endpoints.</td>
-              </tr>
-              <tr>
-                <td><b><span class="text-pastel-red">/api/exercises</span></b></td>
-                <td><span class="badge-method">-</span></td>
-                <td>The input path on the exercises endpoints.</td>
-              </tr>
-            </tbody>
-          </table>
-
-          {% for route, endpoints in apiInfo.info %}
-            <h3 class="endpoint-title mt-4">{{ route }}</h3>
+          <div class="table-responsive">
             <table class="table table-bordered table-striped">
               <thead class="table-light">
                 <tr>
                   <th>Name</th>
                   <th>Method</th>
                   <th>Description</th>
-                  <th>Metadata</th>
                 </tr>
               </thead>
               <tbody>
-                {% for endpoint, data in endpoints %}
-                  <tr>
-                    <td>
-                      {% if endpoint is defined %}
-                        <b><span class="text-pastel-red">{{ endpoint }}</span></b>
-                      {% else %}
-                        <span class="text-muted">No endpoint</span>
-                      {% endif %}
-                    </td>
-                    <td>
-                      <span class="badge-method method-{{ data.method|upper }}">{{ data.method|upper }}</span>
-                    </td>
-                    <td>
-                      {% if data.description is defined %}
-                        <div class="description">📄 {{ data.description }}</div>
-                      {% else %}
-                        <span class="text-muted">No description</span>
-                      {% endif %}
-                    </td>
-                    <td>
-                      {% if data.metadata is defined %}
-                        {% if data.metadata is iterable %}
-                          <ul class="metadata list-unstyled mb-0">
-                            {% for key, value in data.metadata %}
-                              <li>
-                                <span class="metadata-key">{{ key }}</span>:
-                                <span class="metadata-value">{{ value }}</span>
-                              </li>
-                            {% endfor %}
-                          </ul>
-                        {% else %}
-                          <span class="metadata-value">{{ data.metadata }}</span>
-                        {% endif %}
-                      {% else %}
-                        <span class="text-muted">No metadata</span>
-                      {% endif %}
-                    </td>
-                  </tr>
-                {% endfor %}
+                <tr>
+                  <td><b><span class="text-pastel-red">/api/info</span></b></td>
+                  <td><span class="badge-method">-</span></td>
+                  <td>The entry route about the API, such as version, status, etc.</td>
+                </tr>
+                <tr>
+                  <td><b><span class="text-pastel-red">/api/users</span></b></td>
+                  <td><span class="badge-method">-</span></td>
+                  <td>The input path on the user endpoints.</td>
+                </tr>
+                <tr>
+                  <td><b><span class="text-pastel-red">/api/exercises</span></b></td>
+                  <td><span class="badge-method">-</span></td>
+                  <td>The input path on the exercises endpoints.</td>
+                </tr>
               </tbody>
             </table>
+          </div>
+
+          {% for route, endpoints in apiInfo.info %}
+            <h3 class="endpoint-title mt-4">{{ route }}</h3>
+            <div class="table-responsive">
+              <table class="table table-bordered table-striped">
+                <thead class="table-light">
+                  <tr>
+                    <th>Name</th>
+                    <th>Method</th>
+                    <th>Description</th>
+                    <th>Metadata</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for endpoint, data in endpoints %}
+                    <tr>
+                      <td>
+                        {% if endpoint is defined %}
+                          <b><span class="text-pastel-red">{{ endpoint }}</span></b>
+                        {% else %}
+                          <span class="text-muted">No endpoint</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        <span class="badge-method method-{{ data.method|upper }}">{{ data.method|upper }}</span>
+                      </td>
+                      <td>
+                        {% if data.description is defined %}
+                          <div class="description">📄 {{ data.description }}</div>
+                        {% else %}
+                          <span class="text-muted">No description</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% if data.metadata is defined %}
+                          {% if data.metadata is iterable %}
+                            <ul class="metadata list-unstyled mb-0">
+                              {% for key, value in data.metadata %}
+                                <li>
+                                  <span class="metadata-key">{{ key }}</span>:
+                                  <span class="metadata-value">{{ value }}</span>
+                                </li>
+                              {% endfor %}
+                            </ul>
+                          {% else %}
+                            <span class="metadata-value">{{ data.metadata }}</span>
+                          {% endif %}
+                        {% else %}
+                          <span class="text-muted">No metadata</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
           {% endfor %}
         </div>
       </div>
