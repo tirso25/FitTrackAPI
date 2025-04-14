@@ -30,12 +30,16 @@ class HomeController extends AbstractController
                 '/api/users' => [
                     '/seeAllUsers' => [
                         'description' => 'You will be able to see all the users of the database, function for administrators',
-                        'metadata' => 'No parameters needed',
+                        'metadata' => [
+                            'id' => 'User id'
+                        ],
                         'method' => 'GET'
                     ],
                     '/seeOneUser/{id}' => [
                         'description' => 'You will be able to see the selected user by id, function for administrators and users',
-                        'metadata' => 'No parameters needed',
+                        'metadata' => [
+                            'id' => 'User id'
+                        ],
                         'method' => 'GET'
                     ],
                     '/signUp' => [
@@ -64,12 +68,22 @@ class HomeController extends AbstractController
                     ],
                     '/deleteUser/{id}' => [
                         'description' => 'You will be able to delete/deactivate a user through the user id, function for administrators',
-                        'metadata' => 'No parameters needed',
-                        'method' => 'DELETE / POST'
+                        'metadata' => [
+                            'id' => 'User id'
+                        ],
+                        'method' => 'DELETE / PUT / POST'
+                    ],
+                    '/activeUser/{id}' => [
+                        'description' => 'You will be able to ctivate a user through the user id, function for administrators',
+                        'metadata' => [
+                            'id' => 'User id'
+                        ],
+                        'method' => 'PUT / POST'
                     ],
                     '/modifyUser/{id}' => [
                         'description' => 'You will be able to modify a user through the id, function for administrators and users',
                         'metadata' => [
+                            'id' => 'User id',
                             'username' => 'Valid username format (Only lowercase letters and numbers)',
                             'password' => 'Valid password format (Capital letter / Lowercase letter / 0ne number / Symbol or special character / At least 5 characters in length)',
                             'role' => 'ROLE_ADMIN / ROLE_USER / ROLE_COACH',
@@ -82,7 +96,7 @@ class HomeController extends AbstractController
                         'method' => 'POST'
                     ],
                     '/whoami' => [
-                        'description' => 'You will be able to know who you are (the id)',
+                        'description' => 'You will be able to know who you are (the id and role)',
                         'metadata' => 'No parameters needed',
                         'method' => 'GET'
                     ]
@@ -100,7 +114,9 @@ class HomeController extends AbstractController
                     ],
                     '/seeOneExercise/{id}' => [
                         'description' => 'You will be able to see the selected exercise by id, function for administrators and users',
-                        'metadata' => 'No parameters needed',
+                        'metadata' => [
+                            'id' => 'Exercise id'
+                        ],
                         'method' => 'GET'
                     ],
                     '/addExercise' => [
@@ -114,12 +130,22 @@ class HomeController extends AbstractController
                     ],
                     '/deleteExercise/{id}' => [
                         'description' => 'You will be able to delete/deactivate an exercise through the id, function for administrators and coaches',
-                        'metadata' => 'No parameters needed',
-                        'method' => 'DELETE / POST'
+                        'metadata' => [
+                            'id' => 'Exercise id'
+                        ],
+                        'method' => 'DELETE / PUT / POST'
+                    ],
+                    '/activeExercise/{id}' => [
+                        'description' => 'You will be able to ctivate a exercise through the exercise id, function for administrators',
+                        'metadata' => [
+                            'id' => 'Exercise id'
+                        ],
+                        'method' => 'PUT / POST'
                     ],
                     '/modifyExercise/{id}' => [
                         'description' => 'You will be able to modify an exercise through the id, function for administrators and coaches',
                         'metadata' => [
+                            'id' => 'Exercise id',
                             'name' => 'Valid name format (max 30 characters)',
                             'description' => 'Valid description format (max 500 characters min 10 characters)',
                             'category' => 'CHEST / SHOULDER / TRICEPS / BACK / BICEPS / ABDOMINALS / FEMORAL / QUADRICEPS / CALVES',
@@ -128,7 +154,7 @@ class HomeController extends AbstractController
                     ]
                 ]
             ]
-        ];
+        ];;
 
         return $this->render('home/infoAPI.html.twig', [
             'apiInfo' => $info,
@@ -157,12 +183,16 @@ class HomeController extends AbstractController
                 '/api/users' => [
                     '/seeAllUsers' => [
                         'description' => 'You will be able to see all the users of the database, function for administrators',
-                        'metadata' => 'No parameters needed',
+                        'metadata' => [
+                            'id' => 'User id'
+                        ],
                         'method' => 'GET'
                     ],
                     '/seeOneUser/{id}' => [
                         'description' => 'You will be able to see the selected user by id, function for administrators and users',
-                        'metadata' => 'No parameters needed',
+                        'metadata' => [
+                            'id' => 'User id'
+                        ],
                         'method' => 'GET'
                     ],
                     '/signUp' => [
@@ -191,12 +221,22 @@ class HomeController extends AbstractController
                     ],
                     '/deleteUser/{id}' => [
                         'description' => 'You will be able to delete/deactivate a user through the user id, function for administrators',
-                        'metadata' => 'No parameters needed',
-                        'method' => 'DELETE / POST'
+                        'metadata' => [
+                            'id' => 'User id'
+                        ],
+                        'method' => 'DELETE / PUT / POST'
+                    ],
+                    '/activeUser/{id}' => [
+                        'description' => 'You will be able to ctivate a user through the user id, function for administrators',
+                        'metadata' => [
+                            'id' => 'User id'
+                        ],
+                        'method' => 'PUT / POST'
                     ],
                     '/modifyUser/{id}' => [
                         'description' => 'You will be able to modify a user through the id, function for administrators and users',
                         'metadata' => [
+                            'id' => 'User id',
                             'username' => 'Valid username format (Only lowercase letters and numbers)',
                             'password' => 'Valid password format (Capital letter / Lowercase letter / 0ne number / Symbol or special character / At least 5 characters in length)',
                             'role' => 'ROLE_ADMIN / ROLE_USER / ROLE_COACH',
@@ -209,7 +249,7 @@ class HomeController extends AbstractController
                         'method' => 'POST'
                     ],
                     '/whoami' => [
-                        'description' => 'You will be able to know who you are (the id)',
+                        'description' => 'You will be able to know who you are (the id and role)',
                         'metadata' => 'No parameters needed',
                         'method' => 'GET'
                     ]
@@ -227,7 +267,9 @@ class HomeController extends AbstractController
                     ],
                     '/seeOneExercise/{id}' => [
                         'description' => 'You will be able to see the selected exercise by id, function for administrators and users',
-                        'metadata' => 'No parameters needed',
+                        'metadata' => [
+                            'id' => 'Exercise id'
+                        ],
                         'method' => 'GET'
                     ],
                     '/addExercise' => [
@@ -241,12 +283,22 @@ class HomeController extends AbstractController
                     ],
                     '/deleteExercise/{id}' => [
                         'description' => 'You will be able to delete/deactivate an exercise through the id, function for administrators and coaches',
-                        'metadata' => 'No parameters needed',
-                        'method' => 'DELETE / POST'
+                        'metadata' => [
+                            'id' => 'Exercise id'
+                        ],
+                        'method' => 'DELETE / PUT / POST'
+                    ],
+                    '/activeExercise/{id}' => [
+                        'description' => 'You will be able to ctivate a exercise through the exercise id, function for administrators',
+                        'metadata' => [
+                            'id' => 'Exercise id'
+                        ],
+                        'method' => 'PUT / POST'
                     ],
                     '/modifyExercise/{id}' => [
                         'description' => 'You will be able to modify an exercise through the id, function for administrators and coaches',
                         'metadata' => [
+                            'id' => 'Exercise id',
                             'name' => 'Valid name format (max 30 characters)',
                             'description' => 'Valid description format (max 500 characters min 10 characters)',
                             'category' => 'CHEST / SHOULDER / TRICEPS / BACK / BICEPS / ABDOMINALS / FEMORAL / QUADRICEPS / CALVES',
@@ -284,12 +336,16 @@ class HomeController extends AbstractController
                 '/api/users' => [
                     '/seeAllUsers' => [
                         'description' => 'You will be able to see all the users of the database, function for administrators',
-                        'metadata' => 'No parameters needed',
+                        'metadata' => [
+                            'id' => 'User id'
+                        ],
                         'method' => 'GET'
                     ],
                     '/seeOneUser/{id}' => [
                         'description' => 'You will be able to see the selected user by id, function for administrators and users',
-                        'metadata' => 'No parameters needed',
+                        'metadata' => [
+                            'id' => 'User id'
+                        ],
                         'method' => 'GET'
                     ],
                     '/signUp' => [
@@ -318,12 +374,22 @@ class HomeController extends AbstractController
                     ],
                     '/deleteUser/{id}' => [
                         'description' => 'You will be able to delete/deactivate a user through the user id, function for administrators',
-                        'metadata' => 'No parameters needed',
-                        'method' => 'DELETE / POST'
+                        'metadata' => [
+                            'id' => 'User id'
+                        ],
+                        'method' => 'DELETE / PUT / POST'
+                    ],
+                    '/activeUser/{id}' => [
+                        'description' => 'You will be able to ctivate a user through the user id, function for administrators',
+                        'metadata' => [
+                            'id' => 'User id'
+                        ],
+                        'method' => 'PUT / POST'
                     ],
                     '/modifyUser/{id}' => [
                         'description' => 'You will be able to modify a user through the id, function for administrators and users',
                         'metadata' => [
+                            'id' => 'User id',
                             'username' => 'Valid username format (Only lowercase letters and numbers)',
                             'password' => 'Valid password format (Capital letter / Lowercase letter / 0ne number / Symbol or special character / At least 5 characters in length)',
                             'role' => 'ROLE_ADMIN / ROLE_USER / ROLE_COACH',
@@ -336,7 +402,7 @@ class HomeController extends AbstractController
                         'method' => 'POST'
                     ],
                     '/whoami' => [
-                        'description' => 'You will be able to know who you are (the id)',
+                        'description' => 'You will be able to know who you are (the id and role)',
                         'metadata' => 'No parameters needed',
                         'method' => 'GET'
                     ]
@@ -354,7 +420,9 @@ class HomeController extends AbstractController
                     ],
                     '/seeOneExercise/{id}' => [
                         'description' => 'You will be able to see the selected exercise by id, function for administrators and users',
-                        'metadata' => 'No parameters needed',
+                        'metadata' => [
+                            'id' => 'Exercise id'
+                        ],
                         'method' => 'GET'
                     ],
                     '/addExercise' => [
@@ -368,12 +436,22 @@ class HomeController extends AbstractController
                     ],
                     '/deleteExercise/{id}' => [
                         'description' => 'You will be able to delete/deactivate an exercise through the id, function for administrators and coaches',
-                        'metadata' => 'No parameters needed',
-                        'method' => 'DELETE / POST'
+                        'metadata' => [
+                            'id' => 'Exercise id'
+                        ],
+                        'method' => 'DELETE / PUT / POST'
+                    ],
+                    '/activeExercise/{id}' => [
+                        'description' => 'You will be able to ctivate a exercise through the exercise id, function for administrators',
+                        'metadata' => [
+                            'id' => 'Exercise id'
+                        ],
+                        'method' => 'PUT / POST'
                     ],
                     '/modifyExercise/{id}' => [
                         'description' => 'You will be able to modify an exercise through the id, function for administrators and coaches',
                         'metadata' => [
+                            'id' => 'Exercise id',
                             'name' => 'Valid name format (max 30 characters)',
                             'description' => 'Valid description format (max 500 characters min 10 characters)',
                             'category' => 'CHEST / SHOULDER / TRICEPS / BACK / BICEPS / ABDOMINALS / FEMORAL / QUADRICEPS / CALVES',
@@ -382,7 +460,7 @@ class HomeController extends AbstractController
                     ]
                 ]
             ]
-        ];
+        ];;
 
         return $this->json($info, Response::HTTP_OK);
     }

@@ -191,7 +191,7 @@ class Users
 
     public static function removeToken($entityManager, int $id_user)
     {
-        $user = $entityManager->find(Users::class, $id_user);
+        $user = $entityManager->getRepository(Users::class)->findOneBy(['id_usr' => $id_user]);
 
         $user->setToken(null);
 

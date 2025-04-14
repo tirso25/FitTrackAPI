@@ -160,4 +160,13 @@ class Exercises
 
         return $query->getOneOrNullResult() !== null;
     }
+
+    public static function isActive(int $id, $entityManager)
+    {
+        $query = $entityManager->createQuery(
+            'SELECT u FROM App\Entity\Exercises u WHERE u.id_exe = :id AND u.active = true'
+        )->setParameter('id', $id);
+
+        return $query->getOneOrNullResult() !== null;
+    }
 }

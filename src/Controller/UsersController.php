@@ -18,6 +18,19 @@ class UsersController extends AbstractController
     #[Route('/seeAllUsers', name: 'api_seeAllUsers', methods: ['GET'])]
     public function seeAllUsers(EntityManagerInterface $entityManager): JsonResponse
     {
+        session_start();
+
+        $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
+        $role = $thisUser->getRole();
+
+        if ($role !== "ROLE_ADMIN") {
+            return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!$_SESSION['id_user']) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+        }
+
         $users = $entityManager->getRepository(Users::class)->findAll();
 
         if (!$users) {
@@ -44,6 +57,10 @@ class UsersController extends AbstractController
     public function seeOneUser(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
         session_start();
+        if (!$_SESSION['id_user']) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+        }
+
         $id_user = $_SESSION["id_user"];
 
         $user = $entityManager->getRepository(Users::class)->findOneBy(['id_usr' => $id]);
@@ -190,12 +207,17 @@ class UsersController extends AbstractController
         return $this->json(['type' => 'success', 'message' => 'Session successfully started'], Response::HTTP_OK);
     }
 
-    #[Route('/signOut', name: 'api_signOut', methods: ['POST'])]
+    #[Route('/singOut', name: 'api_signOut', methods: ['POST'])]
     public function signOut(EntityManagerInterface $entityManager): JsonResponse
     {
         session_start();
+        if (!$_SESSION['id_user']) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+        }
 
-        Users::removeToken($entityManager, $_SESSION['id_user']);
+        $id_user = $_SESSION['id_user'];
+
+        Users::removeToken($entityManager, $id_user);
 
         setcookie("token", "", time() - 3600);
 
@@ -222,9 +244,22 @@ class UsersController extends AbstractController
         return $this->json(null, JsonResponse::HTTP_NO_CONTENT);
     }
 
-    #[Route('/deleteUser/{id<\d+>}', name: 'api_deleteUser', methods: ['DELETE', 'POST'])]
+    #[Route('/deleteUser/{id<\d+>}', name: 'api_deleteUser', methods: ['DELETE', 'PUT', 'POST'])]
     public function deleteUser(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
+        session_start();
+
+        $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
+        $role = $thisUser->getRole();
+
+        if ($role !== "ROLE_ADMIN") {
+            return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!$_SESSION['id_user']) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+        }
+
         $delUser = $entityManager->getRepository(Users::class)->findOneBy(['id_usr' => $id]);
 
         if (!$delUser) {
@@ -238,10 +273,51 @@ class UsersController extends AbstractController
         return $this->json(['type' => 'success', 'message' => 'User successfully deleted'], Response::HTTP_CREATED);
     }
 
+    #[Route('/activeUser/{id<\d+>}', name: 'app_activeUser', methods: ['PUT', 'POST'])]
+    public function activeUser(EntityManagerInterface $entityManager, int $id): JsonResponse
+    {
+        session_start();
+
+        $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
+        $role = $thisUser->getRole();
+
+        if ($role !== "ROLE_ADMIN") {
+            return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!$_SESSION['id_user']) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $user = $entityManager->find(Users::class, $id);
+
+        if (!$user) {
+            return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $user->setActive(true);
+
+        $entityManager->flush();
+
+        return $this->json(['type' => 'success', 'message' => 'User successfully activated'], Response::HTTP_CREATED);
+    }
+
     #[Route('/modifyUser/{id<\d+>}', name: 'api_modifyUser', methods: ['PUT', 'POST', 'GET'])]
     public function modifyUser(EntityManagerInterface $entityManager, Request $request, int $id): JsonResponse
     {
         session_start();
+
+        $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
+        $role = $thisUser->getRole();
+
+        if ($role !== "ROLE_ADMIN") {
+            return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!$_SESSION['id_user']) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+        }
+
         $id_user = $_SESSION["id_user"];
 
         $user = $entityManager->getRepository(Users::class)->findOneBy(['id_usr' => $id]);
@@ -318,9 +394,18 @@ class UsersController extends AbstractController
     }
 
     #[Route('/whoami', name: 'app_whoami', methods: ['GET'])]
-    public function whoami(): JsonResponse
+    public function whoami(EntityManagerInterface $entityManager): JsonResponse
     {
         session_start();
-        return $this->json(['ID' => $_SESSION['id_user']]);
+        $id_user = $_SESSION['id_user'];
+
+        if (!$id_user) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $thisUser = $entityManager->find(Users::class, $id_user);
+        $role = $thisUser->getRole();
+
+        return $this->json(['ID' => $id_user, 'ROLE' => $role]);
     }
 }

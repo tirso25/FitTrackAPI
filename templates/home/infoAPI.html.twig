@@ -18,6 +18,7 @@
       background-color: #f8f9fa;
       padding-top: 2rem;
       font-family: 'FiraCode';
+      font-weight: bold;
     }
     .api-card {
       margin-bottom: 2rem;
@@ -31,11 +32,9 @@
       padding: 1rem;
     }
     .endpoint-title {
-      font-weight: bold;
       color: #61afef;
     }
     .badge-method {
-      font-weight: bold;
       padding: 0.4em 0.6em;
       font-size: 0.85rem;
       border-radius: 0.4rem;
@@ -62,7 +61,6 @@
     }
     .description {
       color: #198754;
-      font-style: italic;
     }
     .metadata {
       color: #6f42c1;
@@ -154,7 +152,7 @@
                     <tr>
                       <td>
                         {% if endpoint is defined %}
-                          <b><span class="text-pastel-red">{{ endpoint }}</span></b>
+                          <span class="text-pastel-red">{{ endpoint }}</span>
                         {% else %}
                           <span class="text-muted">No endpoint</span>
                         {% endif %}
