@@ -20,15 +20,15 @@ class ExercisesController extends AbstractController
     {
         session_start();
 
+        if (!$_SESSION['id_user']) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+        }
+
         $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
         $role = $thisUser->getRole();
 
         if ($role !== "ROLE_ADMIN") {
             return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
-        }
-
-        if (!$_SESSION['id_user']) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
         $exercises = $entityManager->getRepository(Exercises::class)->findAll();
@@ -57,6 +57,7 @@ class ExercisesController extends AbstractController
     public function seeAllActiveExercises(EntityManagerInterface $entityManager): JsonResponse
     {
         session_start();
+
         if (!$_SESSION['id_user']) {
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
@@ -125,15 +126,15 @@ class ExercisesController extends AbstractController
     {
         session_start();
 
+        if (!$_SESSION['id_user']) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+        }
+
         $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
         $role = $thisUser->getRole();
 
         if ($role !== "ROLE_ADMIN") {
             return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
-        }
-
-        if (!$_SESSION['id_user']) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
         $data = json_decode($request->getContent(), true);
@@ -184,15 +185,15 @@ class ExercisesController extends AbstractController
     {
         session_start();
 
+        if (!$_SESSION['id_user']) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+        }
+
         $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
         $role = $thisUser->getRole();
 
         if ($role !== "ROLE_ADMIN") {
             return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
-        }
-
-        if (!$_SESSION['id_user']) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
         $delexercise = $entityManager->find(Exercises::class, $id);
@@ -212,15 +213,15 @@ class ExercisesController extends AbstractController
     {
         session_start();
 
+        if (!$_SESSION['id_user']) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+        }
+
         $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
         $role = $thisUser->getRole();
 
         if ($role !== "ROLE_ADMIN") {
             return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
-        }
-
-        if (!$_SESSION['id_user']) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
         $exercise = $entityManager->find(Exercises::class, $id);
@@ -241,17 +242,16 @@ class ExercisesController extends AbstractController
     {
         session_start();
 
+        if (!$_SESSION['id_user']) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+        }
+
         $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
         $role = $thisUser->getRole();
 
         if ($role !== "ROLE_ADMIN") {
             return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
         }
-
-        if (!$_SESSION['id_user']) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
-        }
-
 
         $excercise = $entityManager->find(Exercises::class, $id);
 

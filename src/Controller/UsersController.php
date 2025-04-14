@@ -20,15 +20,15 @@ class UsersController extends AbstractController
     {
         session_start();
 
+        if (!$_SESSION['id_user']) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+        }
+
         $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
         $role = $thisUser->getRole();
 
         if ($role !== "ROLE_ADMIN") {
             return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
-        }
-
-        if (!$_SESSION['id_user']) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
         $users = $entityManager->getRepository(Users::class)->findAll();
@@ -211,6 +211,7 @@ class UsersController extends AbstractController
     public function signOut(EntityManagerInterface $entityManager): JsonResponse
     {
         session_start();
+
         if (!$_SESSION['id_user']) {
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
@@ -249,15 +250,15 @@ class UsersController extends AbstractController
     {
         session_start();
 
+        if (!$_SESSION['id_user']) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+        }
+
         $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
         $role = $thisUser->getRole();
 
         if ($role !== "ROLE_ADMIN") {
             return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
-        }
-
-        if (!$_SESSION['id_user']) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
         $delUser = $entityManager->getRepository(Users::class)->findOneBy(['id_usr' => $id]);
@@ -278,15 +279,15 @@ class UsersController extends AbstractController
     {
         session_start();
 
+        if (!$_SESSION['id_user']) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+        }
+
         $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
         $role = $thisUser->getRole();
 
         if ($role !== "ROLE_ADMIN") {
             return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
-        }
-
-        if (!$_SESSION['id_user']) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
         $user = $entityManager->find(Users::class, $id);
@@ -307,15 +308,15 @@ class UsersController extends AbstractController
     {
         session_start();
 
+        if (!$_SESSION['id_user']) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+        }
+
         $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
         $role = $thisUser->getRole();
 
         if ($role !== "ROLE_ADMIN") {
             return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
-        }
-
-        if (!$_SESSION['id_user']) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
         $id_user = $_SESSION["id_user"];
