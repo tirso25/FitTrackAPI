@@ -29,9 +29,10 @@ class Exercises
     #[Assert\NotBlank]
     private ?string $description = null;
 
-    #[ORM\Column(length: 10, type: Types::STRING)]
-    #[Assert\NotBlank]
-    private ?string $category = null;
+    #[ORM\ManyToOne(targetEntity: Categories::class, inversedBy: 'exercises')]
+    #[ORM\JoinColumn(name: 'category', referencedColumnName: 'id_cat', nullable: false)]
+    #[Assert\NotNull]
+    private ?Categories $category = null;
 
     #[ORM\Column(type: Types::INTEGER)]
     #[Assert\NotNull]
@@ -61,7 +62,6 @@ class Exercises
     public function setName(string $name): static
     {
         $this->name = $name;
-
         return $this;
     }
 
@@ -73,19 +73,17 @@ class Exercises
     public function setDescription(string $description): static
     {
         $this->description = $description;
-
         return $this;
     }
 
-    public function getCategory(): ?string
+    public function getCategory(): ?Categories
     {
         return $this->category;
     }
 
-    public function setCategory(string $category): static
+    public function setCategory(Categories $category): static
     {
         $this->category = $category;
-
         return $this;
     }
 
@@ -97,7 +95,6 @@ class Exercises
     public function setLikes(int $likes): static
     {
         $this->likes = $likes;
-
         return $this;
     }
 
@@ -109,7 +106,6 @@ class Exercises
     public function setActive(bool $active): static
     {
         $this->active = $active;
-
         return $this;
     }
 
@@ -121,7 +117,6 @@ class Exercises
     public function setFavoriteExercises($favoriteExercises)
     {
         $this->favoriteExercises = $favoriteExercises;
-
         return $this;
     }
 

@@ -36,8 +36,9 @@ class Users
     #[Assert\NotBlank]
     private ?string $password = null;
 
-    #[ORM\Column(length: 255, type: Types::STRING)]
-    private ?string $role = null;
+    #[ORM\ManyToOne(targetEntity: Roles::class)]
+    #[ORM\JoinColumn(name: 'role_id', referencedColumnName: 'id_role')]
+    private ?Roles $role = null;
 
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
     private ?bool $active = null;
@@ -47,6 +48,9 @@ class Users
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, options: ['default' => 'CURRENT_TIMESTAMP'])]
     private ?\DateTime $dateUnion = null;
+
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
+    private ?bool $public = null;
 
     #[ORM\OneToMany(targetEntity: FavoriteExercises::class, mappedBy: 'user', orphanRemoval: true)]
     private Collection $favoriteExercises;
@@ -97,12 +101,12 @@ class Users
         return $this;
     }
 
-    public function getRole(): ?string
+    public function getRole(): ?Roles
     {
         return $this->role;
     }
 
-    public function setRole(string $role): static
+    public function setRole(?Roles $role): static
     {
         $this->role = $role;
 
@@ -121,12 +125,12 @@ class Users
         return $this;
     }
 
-    public function getFavoriteExercises()
+    public function getFavoriteExercises(): Collection
     {
         return $this->favoriteExercises;
     }
 
-    public function setFavoriteExercises($favoriteExercises)
+    public function setFavoriteExercises(Collection $favoriteExercises): static
     {
         $this->favoriteExercises = $favoriteExercises;
 
@@ -138,14 +142,14 @@ class Users
         return $this->token;
     }
 
-    public function setToken($token)
+    public function setToken(?string $token): static
     {
         $this->token = $token;
 
         return $this;
     }
 
-    public function getDateUnion()
+    public function getDateUnion(): ?\DateTime
     {
         return $this->dateUnion;
     }
@@ -155,6 +159,19 @@ class Users
         $this->dateUnion = $dateUnion;
         return $this;
     }
+
+    public function getPublic(): ?bool
+    {
+        return $this->public;
+    }
+
+    public function setPublic(bool $public): static
+    {
+        $this->public = $public;
+
+        return $this;
+    }
+
 
     public static function validate($data)
     {
@@ -198,7 +215,6 @@ class Users
         $entityManager->flush();
     }
 
-
     public static function tokenExisting(string $token, $entityManager)
     {
         return $entityManager->getRepository(Users::class)->findOneBy(['token' => $token]);
@@ -221,7 +237,7 @@ class Users
             'email' => $email,
             'username' => $username
         ]);
-        //Me retorna un boolean true en el caso de que si se encuentre un usuario y un false cuando es null(no existe el usuario)
+
         return $query->getOneOrNullResult() !== null;
     }
 
@@ -279,5 +295,16 @@ class Users
             ->getOneOrNullResult();
 
         return $query ? $query['id_usr'] : null;
+    }
+
+    public static function checkState($entityManager, int $userId)
+    {
+        if ($userId === null) {
+            return false;
+        }
+
+        $user = $entityManager->find(Users::class, $userId);
+
+        return ($user->getActive());
     }
 }

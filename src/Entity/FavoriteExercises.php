@@ -48,4 +48,36 @@ class FavoriteExercises
     {
         return $this->id_fe;
     }
+
+    public static function getFavouriteExercisesByUserId(int $id, $entityManager): array
+    {
+        $query = $entityManager->createQuery(
+            'SELECT fe
+            FROM App\Entity\FavoriteExercises fe
+            JOIN fe.user u
+            WHERE fe.user = :id_user AND u.public = true'
+        )->setParameter('id_user', $id);
+
+        $favorites = $query->getResult();
+
+        $data = [];
+
+        if (empty($favorites)) {
+            $data = ['type' => 'warning', 'message' => 'This user has a private profile or no bookmarks'];
+        }
+
+        foreach ($favorites as $favourite) {
+            $data[] = [
+                'type' => 'success',
+                'message' => [
+                    'id_exe' => $favourite->getExercise()->getIdExe(),
+                    'name_exe' => $favourite->getExercise()->getName(),
+                    'description_exe' => $favourite->getExercise()->getDescription(),
+                    'category_exe' => $favourite->getExercise()->getCategory()->getName()
+                ]
+            ];
+        }
+
+        return $data;
+    }
 }

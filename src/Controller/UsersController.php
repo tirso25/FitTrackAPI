@@ -2,6 +2,8 @@
 
 namespace App\Controller;
 
+use App\Entity\FavoriteExercises;
+use App\Entity\Roles;
 use App\Entity\Users;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -10,7 +12,9 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
+
 //!SECURIZAR EN CUANTO A role
+//!VER NUEVOS CAMBIOS CON PUBLIC (perfil publico)
 
 #[Route('/api/users')]
 class UsersController extends AbstractController
@@ -24,8 +28,14 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
+        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+            $this->forceSignOut($entityManager, $_SESSION['id_user']);
+
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
+        }
+
         $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
-        $role = $thisUser->getRole();
+        $role = $thisUser->getRole()->getName();
 
         if ($role !== "ROLE_ADMIN") {
             return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
@@ -44,7 +54,7 @@ class UsersController extends AbstractController
                 'id_usr' => $user->getIdUsr(),
                 'email' => $user->getEmail(),
                 'username' => $user->getUsername(),
-                'role' => $user->getRole(),
+                'role' => $user->getRole()->getName(),
                 'active' => $user->getActive(),
                 'date_union' => $user->getDateUnion()
             ];
@@ -57,8 +67,15 @@ class UsersController extends AbstractController
     public function seeOneUser(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
         session_start();
+
         if (!$_SESSION['id_user']) {
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+            $this->forceSignOut($entityManager, $_SESSION['id_user']);
+
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
         }
 
         $id_user = $_SESSION["id_user"];
@@ -72,14 +89,16 @@ class UsersController extends AbstractController
 
         $data = [];
 
-        $role_user = $thisUser->getRole();
-        //!!SE PODRÍA USAR PARA QUE LOS USUARIOS PUEDAN VER LOS PERFILES DE OTROS
+        $role_user = $thisUser->getRole()->getName();
 
         //!HABLAR SOBRE SI ES BUENA IDEA MANDAR EL ID O Q SOLO SE ENVIE EL NOMBRE Y LUEGO SI SE NECESITA EL ID HACER UN findOneBy CON EL username
         if ($role_user === "ROLE_USER" && $id_user !== $id) {
+            $favs = FavoriteExercises::getFavouriteExercisesByUserId($id, $entityManager);
+
             $data[] = [
                 'id_usr' => $user->getIdUsr(),
-                'username' => $user->getUsername()
+                'username' => $user->getUsername(),
+                'exercisesFavorites' => $favs
             ];
         } else {
             $data[] = [
@@ -87,7 +106,7 @@ class UsersController extends AbstractController
                 'email' => $user->getEmail(),
                 'username' => $user->getUsername(),
                 'password' => $user->getPassword(),
-                'role' => $user->getRole(),
+                'role' => $user->getRole()->getName(),
                 'active' => $user->getActive(),
                 'date_union' => $user->getDateUnion()
             ];
@@ -101,15 +120,15 @@ class UsersController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        $email = Users::validate(strtolower($data['email']));
-        $username = Users::validate(strtolower($data['username']));
-        $password = $data['password'];
-        $repeatPassword = $data['repeatPassword'];
+        $email = Users::validate(strtolower($data['email'] ?? ""));
+        $username = Users::validate(strtolower($data['username'] ?? ""));
+        $password = $data['password'] ?? "";
+        $repeatPassword = $data['repeatPassword'] ?? "";
 
         $password_regex = "/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{5,}$/";
         $username_regex = "/^[a-z0-9]{5,20}$/";
 
-        if (empty($email) || empty($username) || empty($password) || empty($repeatPassword)) {
+        if ($email === "" || $username === "" || $password === "" || $repeatPassword === "") {
             return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
         }
 
@@ -133,13 +152,16 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'Passwords dont match'], Response::HTTP_BAD_REQUEST);
         }
 
+        $role = $entityManager->getRepository(Roles::class)->findOneBy(['name' => 'ROLE_USER']);
+
         $newUser = new Users();
 
         $newUser->setEmail($email);
         $newUser->setUsername($username);
         $newUser->setPassword(Users::hashPassword($password));
-        $newUser->setRole('ROLE_USER');
+        $newUser->setRole($role);
         $newUser->setActive(true);
+        $newUser->setPublic(true);
         $newUser->setDateUnion(new \DateTime());
 
         $entityManager->persist($newUser);
@@ -153,16 +175,14 @@ class UsersController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        $email = Users::validate(strtolower($data['email']));
-        $password = Users::validate($data['password']);
-        $rememberme = isset($data['rememberme'])
-            ? filter_var($data['rememberme'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
-            : null;
+        $email = Users::validate(strtolower($data['email'] ?? ""));
+        $password = Users::validate($data['password'] ?? "");
+        $rememberme = isset($data['rememberme']) ? filter_var($data['rememberme'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : null;
 
         $password_regex = "/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{5,}$/";
         $username_regex = "/^[a-z0-9]{5,20}$/";
 
-        if (empty($email) || empty($password) || $rememberme === null) {
+        if ($email === "" || $password === "" || $rememberme === null) {
             return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
         }
 
@@ -180,14 +200,14 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'Invalid password format'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!Users::passwordsMatch($email, $password, $entityManager)) {
-            return $this->json(['type' => 'error', 'message' => 'User or password doesnt match'], Response::HTTP_BAD_REQUEST);
-        }
-
         $id_user = Users::getIdUser($email, $entityManager);
 
         if (!$id_user) {
             return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!Users::passwordsMatch($email, $password, $entityManager)) {
+            return $this->json(['type' => 'error', 'message' => 'User or password doesnt match'], Response::HTTP_BAD_REQUEST);
         }
 
         session_start();
@@ -207,6 +227,15 @@ class UsersController extends AbstractController
         return $this->json(['type' => 'success', 'message' => 'Session successfully started'], Response::HTTP_OK);
     }
 
+    private function forceSignOut(EntityManagerInterface $entityManager, int $id_user)
+    {
+        Users::removeToken($entityManager, $id_user);
+
+        setcookie("token", "", time() - 3600, "/");
+
+        unset($_SESSION['id_user']);
+    }
+
     #[Route('/singOut', name: 'api_signOut', methods: ['POST'])]
     public function signOut(EntityManagerInterface $entityManager): JsonResponse
     {
@@ -216,13 +245,15 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
+        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+            $this->forceSignOut($entityManager, $_SESSION['id_user']);
+
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
+        }
+
         $id_user = $_SESSION['id_user'];
 
-        Users::removeToken($entityManager, $id_user);
-
-        setcookie("token", "", time() - 3600);
-
-        unset($_SESSION['id_user']);
+        $this->forceSignOut($entityManager, $id_user);
 
         return $this->json(['type' => 'success', 'message' => 'Session successfully ended'], Response::HTTP_OK);
     }
@@ -245,6 +276,7 @@ class UsersController extends AbstractController
         return $this->json(null, JsonResponse::HTTP_NO_CONTENT);
     }
 
+    //!DEPENDIENDO DE LO QUE SE DIGA SE ÙEDE QUITAR PQ YA LO HACE modifyUser
     #[Route('/deleteUser/{id<\d+>}', name: 'api_deleteUser', methods: ['DELETE', 'PUT', 'POST'])]
     public function deleteUser(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
@@ -254,8 +286,14 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
+        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+            $this->forceSignOut($entityManager, $_SESSION['id_user']);
+
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
+        }
+
         $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
-        $role = $thisUser->getRole();
+        $role = $thisUser->getRole()->getName();
 
         if ($role !== "ROLE_ADMIN") {
             return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
@@ -274,6 +312,7 @@ class UsersController extends AbstractController
         return $this->json(['type' => 'success', 'message' => 'User successfully deleted'], Response::HTTP_CREATED);
     }
 
+    //!DEPENDIENDO DE LO QUE SE DIGA SE ÙEDE QUITAR PQ YA LO HACE modifyUser
     #[Route('/activeUser/{id<\d+>}', name: 'app_activeUser', methods: ['PUT', 'POST'])]
     public function activeUser(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
@@ -283,8 +322,14 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
+        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+            $this->forceSignOut($entityManager, $_SESSION['id_user']);
+
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
+        }
+
         $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
-        $role = $thisUser->getRole();
+        $role = $thisUser->getRole()->getName();
 
         if ($role !== "ROLE_ADMIN") {
             return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
@@ -312,40 +357,64 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
-        $role = $thisUser->getRole();
+        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+            $this->forceSignOut($entityManager, $_SESSION['id_user']);
 
-        if ($role !== "ROLE_ADMIN") {
-            return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
         }
 
-        $id_user = $_SESSION["id_user"];
-
         $user = $entityManager->getRepository(Users::class)->findOneBy(['id_usr' => $id]);
-        $thisUser = $entityManager->getRepository(Users::class)->findOneBy(['id_usr' => $id_user]);
+        $thisUser = $entityManager->getRepository(Users::class)->findOneBy(['id_usr' => $_SESSION['id_user']]);
 
         if (!$user) {
             return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
         }
 
-        $role_user = $thisUser->getRole();
+        $role_user = $thisUser->getRole()->getName();
 
-        if ($role_user === "ROLE_USER" && $id_user !== $id) {
+        if ($role_user === "ROLE_USER" && $_SESSION['id_user'] !== $id) {
             return $this->json(['type' => 'error', 'message' => 'The user does not match'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $roles = $entityManager->getRepository(Roles::class)->findAll();
+
+        $rolesData = [];
+
+        foreach ($roles as $data) {
+            $rolesData[] = [
+                'id' => $data->getIdRole(),
+                'name' => $data->getName(),
+            ];
+        }
+
+        if ($request->isMethod('GET')) {
+            $data = [
+                'id_usr' => $user->getIdUsr(),
+                'email' => $user->getEmail(),
+                'username' => $user->getUsername(),
+                'public' => $user->getPublic(),
+                'active' => $user->getActive(),
+                'role_id' => $user->getRole()->getIdRole(),
+                'role_name' => $user->getRole()->getName(),
+                'roles' => $rolesData
+            ];
+
+            return $this->json($data, Response::HTTP_OK);
         }
 
         if ($request->isMethod('POST') || $request->isMethod('PUT')) {
             $data = json_decode($request->getContent(), true);
 
-            $username = Users::validate(strtolower($data['username']));
+            $username = Users::validate(strtolower($data['username'] ?? ""));
             $password = Users::validate($data['password']);
-            $role = Users::validate($data['role']);
+            $roleId = (int)Users::validate($data['role']) ?? "";
+            $public = filter_var($data['public'] ?? null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            $active = filter_var($data['active'] ?? null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
 
             $password_regex = "/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{5,}$/";
             $username_regex = "/^[a-z0-9]{5,20}$/";
-            $role_regex = "/^[A-Z0-9]{1,255}$/";
 
-            if (empty($username)) {
+            if ($username === "" || !isset($password) || $roleId === "" || $public === null || $active === null) {
                 return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
             }
 
@@ -368,45 +437,53 @@ class UsersController extends AbstractController
                 $user->setPassword($hashedPassword);
             }
 
-            if (!empty($role)) {
-                if (!in_array($role, ['ROLE_ADMIN', 'ROLE_USER', 'ROLE_COACH']) || !preg_match($role_regex, $role)) {
-                    return $this->json(['type' => 'error', 'message' => 'Invalid role'], Response::HTTP_BAD_REQUEST);
+            if ($public !== null) {
+                $user->setPublic($public);
+            }
+
+            if ($role_user === "ROLE_ADMIN") {
+
+                if (!empty($roleId)) {
+                    $role = $entityManager->find(Roles::class, $roleId);
+
+                    if (!$role) {
+                        return $this->json(['type' => 'error', 'message' => 'Invalid role'], Response::HTTP_BAD_REQUEST);
+                    }
+
+                    $user->setRole($role);
                 }
-                $user->setRole($role);
+
+                if ($active !== null) {
+                    $user->setActive($active);
+                }
             }
 
             $entityManager->flush();
 
             return $this->json(['type' => 'success', 'message' => 'User successfully updated'], Response::HTTP_CREATED);
-        } elseif ($request->isMethod('GET')) {
-            $data[] = [
-                'id_usr' => $user->getIdUsr(),
-                'email' => $user->getEmail(),
-                'username' => $user->getUsername(),
-                'password' => $user->getPassword(),
-                'role' => $user->getRole(),
-                'roles' => ['ADMIN', 'USER', 'COACH']
-            ];
-
-            return $this->json($data, Response::HTTP_OK);
-        } else {
-            return $this->json(['type' => 'error', 'message' => 'Method not allowed'], Response::HTTP_METHOD_NOT_ALLOWED);
         }
+
+        return $this->json(['type' => 'error', 'message' => 'Method not allowed'], Response::HTTP_METHOD_NOT_ALLOWED);
     }
 
     #[Route('/whoami', name: 'app_whoami', methods: ['GET'])]
     public function whoami(EntityManagerInterface $entityManager): JsonResponse
     {
         session_start();
-        $id_user = $_SESSION['id_user'];
 
-        if (!$id_user) {
+        if (!$_SESSION['id_user']) {
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        $thisUser = $entityManager->find(Users::class, $id_user);
-        $role = $thisUser->getRole();
+        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+            $this->forceSignOut($entityManager, $_SESSION['id_user']);
 
-        return $this->json(['ID' => $id_user, 'ROLE' => $role]);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $thisUser = $entityManager->find(Users::class,  $_SESSION['id_user']);
+        $role = $thisUser->getRole()->getName();
+
+        return $this->json(['ID' =>  $_SESSION['id_user'], 'ROLE' => $role]);
     }
 }
