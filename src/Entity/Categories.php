@@ -20,7 +20,7 @@ class Categories
     private ?int $id_cat = null;
 
     #[ORM\Column(length: 50, type: Types::STRING, unique: true)]
-    #[Assert\NotBlank]
+    #[Assert\NotBlank(message: "The name cannot be empty")]
     private ?string $name = null;
 
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
@@ -62,15 +62,14 @@ class Categories
         return $this;
     }
 
-    public function getActive()
+    public function getActive(): ?bool
     {
         return $this->active;
     }
 
-    public function setActive($active)
+    public function setActive(bool $active): static
     {
         $this->active = $active;
-
         return $this;
     }
 

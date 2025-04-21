@@ -129,7 +129,7 @@ class RolesController extends AbstractController
 
         $name = Roles::validate(strtoupper($data['name'] ?? ""));
 
-        $role_regex = "/^ROLE_[A-Za-z]{3,50}$/";
+        $role_regex = "/^ROLE_[A-Z]{4,50}$/";
 
         if ($name === "") {
             return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
@@ -265,7 +265,7 @@ class RolesController extends AbstractController
                 ? filter_var($data['active'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
                 : null;
 
-            $role_regex = "/^ROLE_[A-Za-z]{3,50}$/";
+            $role_regex = "/^ROLE_[A-Z]{4,50}$/";
 
             if ($name === "" || $active === null) {
                 return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);

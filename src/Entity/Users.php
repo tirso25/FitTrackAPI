@@ -24,16 +24,16 @@ class Users
     private ?int $id_usr = null;
 
     #[ORM\Column(length: 255, type: Types::STRING, unique: true)]
-    #[Assert\NotBlank]
+    #[Assert\NotBlank(message: "The email cannot be empty")]
     #[Assert\Email]
     private ?string $email = null;
 
     #[ORM\Column(length: 20, type: Types::STRING, unique: true)]
-    #[Assert\NotBlank]
+    #[Assert\NotBlank(message: "The username cannot be empty")]
     private ?string $username = null;
 
     #[ORM\Column(length: 255, type: Types::TEXT)]
-    #[Assert\NotBlank]
+    #[Assert\NotNull]
     private ?string $password = null;
 
     #[ORM\ManyToOne(targetEntity: Roles::class)]

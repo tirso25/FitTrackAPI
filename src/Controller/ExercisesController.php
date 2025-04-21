@@ -159,7 +159,7 @@ class ExercisesController extends AbstractController
         $category_id = (int)Exercises::validate($data['category'] ?? "");
 
         $name_regex = "/^[a-z0-9]{1,30}$/";
-        $description_regex = "/^[A-Z0-9]{10,500}$/";
+        $description_regex = "/^[a-zA-Z0-9]{10,500}$/";
 
         if ($name === "" || $description === "" || $category_id === "") {
             return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
@@ -332,6 +332,7 @@ class ExercisesController extends AbstractController
                 : null;
 
             $name_regex = "/^[a-z0-9]{1,30}$/";
+            $description_regex = "/^[a-zA-Z0-9]{10,500}$/";
 
             if ($name === "" || $description === "" || $category_id === "" || $active === null) {
                 return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
@@ -345,7 +346,7 @@ class ExercisesController extends AbstractController
                 return $this->json(['type' => 'error', 'message' => 'Invalid name format'], Response::HTTP_BAD_REQUEST);
             }
 
-            if (strlen($description) > 500 || strlen($description) < 10) {
+            if (preg_match($description_regex, $description)) {
                 return $this->json(['type' => 'error', 'message' => 'Invalid description format'], Response::HTTP_BAD_REQUEST);
             }
 

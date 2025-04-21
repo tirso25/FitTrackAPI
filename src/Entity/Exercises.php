@@ -22,11 +22,11 @@ class Exercises
     private ?int $id_exe = null;
 
     #[ORM\Column(length: 30, type: Types::STRING, unique: true)]
-    #[Assert\NotBlank]
+    #[Assert\NotBlank(message: "The name cannot be empty")]
     private ?string $name = null;
 
     #[ORM\Column(length: 500, type: Types::STRING)]
-    #[Assert\NotBlank]
+    #[Assert\NotBlank(message: "The description cannot be empty")]
     private ?string $description = null;
 
     #[ORM\ManyToOne(targetEntity: Categories::class, inversedBy: 'exercises')]
