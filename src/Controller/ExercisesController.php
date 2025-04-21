@@ -25,6 +25,7 @@ class ExercisesController extends AbstractController
         unset($_SESSION['id_user']);
     }
 
+    //!CON JS AL DEVOLVER UN JSON CON EL active SE PUEDE FILTAR EN EL FRONT POR active SIN NECESIDAD DE CREAR UN METODO DE seeAllActiveExercises Y QUITARNIOS EL RECARGAR LA PÁGINA PUDIENDIO HACER UN Switches PARA ALTERNAR ENTRE ACTIVOS O TODOS
     #[Route('/seeAllExercises', name: 'api_seeAllExercises', methods: ['GET'])]
     public function seeAllExercises(EntityManagerInterface $entityManager): JsonResponse
     {
@@ -69,6 +70,7 @@ class ExercisesController extends AbstractController
         return $this->json($data, Response::HTTP_OK);
     }
 
+    //!SE CREA POS SI SE QUIERE CONSUMIR COMO API, NO SE USA EN EL FRONT
     #[Route('/seeAllActiveExercises', name: 'api_seeAllActiveExercises', methods: ['GET'])]
     public function seeAllActiveExercises(EntityManagerInterface $entityManager): JsonResponse
     {
@@ -95,6 +97,7 @@ class ExercisesController extends AbstractController
         return $this->json($data, Response::HTTP_OK);
     }
 
+    //!NO HAY NECESIDAD DE CREAR UN ENDPOINT PARA VER UN SOLO EJERCICIO, AL CARGAR LA PÁGINA NOS TRAEMOS TODOS LOS EJERCICIOS, SI QUIERES VER UNO EN ESPECIDICO PARA MODIFICARLO SOLO HAS DE BUSCARLO CON EL ID CON JS EN EL JSON, NOS QUITAMOS TIEMPOS DE CARGA
     #[Route('/seeOneExcercise/{id<\d+>}', name: 'api_seeOneExcercise', methods: ['GET'])]
     public function seeOneExcercise(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
@@ -324,10 +327,11 @@ class ExercisesController extends AbstractController
             $name = Exercises::validate(trim(strtolower($data['name'] ?? "")));
             $description = Exercises::validate(trim(strtolower($data['description'] ?? "")));
             $category_id = (int)Exercises::validate($data['category'] ?? "");
-            $active = filter_var($data['active'] ?? null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            $active = array_key_exists('active', $data)
+                ? filter_var($data['active'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+                : null;
 
             $name_regex = "/^[a-z0-9]{1,30}$/";
-            $category_regex = "/^[A-Z0-9]{1,10}$/";
 
             if ($name === "" || $description === "" || $category_id === "" || $active === null) {
                 return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);

@@ -14,6 +14,9 @@ class FavoriteExercises
     #[ORM\Column(type: Types::INTEGER)]
     private ?int $id_fe = null;
 
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
+    private ?bool $active = null;
+
     #[ORM\ManyToOne(targetEntity: Users::class, inversedBy: 'favorite_exercises')]
     #[ORM\JoinColumn(name: 'id_usr', referencedColumnName: 'id_usr', nullable: false)]
     private ?Users $user = null;
@@ -49,6 +52,18 @@ class FavoriteExercises
         return $this->id_fe;
     }
 
+    public function getActive()
+    {
+        return $this->active;
+    }
+
+    public function setActive($active)
+    {
+        $this->active = $active;
+
+        return $this;
+    }
+
     public static function getFavouriteExercisesByUserId(int $id, $entityManager): array
     {
         $query = $entityManager->createQuery(
@@ -64,6 +79,38 @@ class FavoriteExercises
 
         if (empty($favorites)) {
             $data = ['type' => 'warning', 'message' => 'This user has a private profile or no bookmarks'];
+        }
+
+        foreach ($favorites as $favourite) {
+            $data[] = [
+                'type' => 'success',
+                'message' => [
+                    'id_exe' => $favourite->getExercise()->getIdExe(),
+                    'name_exe' => $favourite->getExercise()->getName(),
+                    'description_exe' => $favourite->getExercise()->getDescription(),
+                    'category_exe' => $favourite->getExercise()->getCategory()->getName()
+                ]
+            ];
+        }
+
+        return $data;
+    }
+
+    public static function getFavouriteExercises(int $id, $entityManager): array
+    {
+        $query = $entityManager->createQuery(
+            'SELECT fe
+            FROM App\Entity\FavoriteExercises fe
+            JOIN fe.user u
+            WHERE fe.user = :id_user'
+        )->setParameter('id_user', $id);
+
+        $favorites = $query->getResult();
+
+        $data = [];
+
+        if (empty($favorites)) {
+            $data = ['type' => 'warning', 'message' => 'You have no exercises added to favorites'];
         }
 
         foreach ($favorites as $favourite) {

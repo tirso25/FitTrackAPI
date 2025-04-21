@@ -13,12 +13,20 @@ use Symfony\Component\HttpFoundation\Response;
 
 //!VER NUEVOS CAMBIOS CON PUBLIC (perfil publico)
 
-#[Route('/api/FavoriteExercises')]
+#[Route('/api/favoriteExercises')]
 class FavoriteExercisesController extends AbstractController
 {
-    //!VER SI SI QUITA YA QUE ESTO YA LO HACE seeOneUser (CONTROLADOR DE USERS)
-    #[Route('/seeUserFavoriteExercises/{id<\d+>}', name: 'api_seeAllFavouritesExercises', methods: ['GET'])]
-    public function seeAllFavouritesExercises(EntityManagerInterface $entityManager, int $id): JsonResponse
+    private function forceSignOut(EntityManagerInterface $entityManager, int $id_user)
+    {
+        Users::removeToken($entityManager, $id_user);
+
+        setcookie("token", "", time() - 3600, "/");
+
+        unset($_SESSION['id_user']);
+    }
+
+    #[Route('/seeFavoriteExercises', name: 'api_seeFavoriteExercises', methods: ['GET'])]
+    public function seeAllFavouritesExercises(EntityManagerInterface $entityManager): JsonResponse
     {
         session_start();
 
@@ -26,15 +34,13 @@ class FavoriteExercisesController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        // if ($id_user !== $id) {
-        //     return $this->json(['type' => 'error', 'message' => 'The user does not match'], Response::HTTP_BAD_REQUEST);
-        // }
+        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+            $this->forceSignOut($entityManager, $_SESSION['id_user']);
 
-        $favourites = FavoriteExercises::getFavouriteExercisesByUserId($id, $entityManager);
-
-        if (empty($favourites)) {
-            return $this->json(['type' => 'error', 'message' => 'This user does not exist or does not have favorites'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
         }
+
+        $favourites = FavoriteExercises::getFavouriteExercises($_SESSION['id_user'], $entityManager);
 
         return $this->json($favourites, Response::HTTP_OK);
     }
@@ -43,19 +49,24 @@ class FavoriteExercisesController extends AbstractController
     public function addExerciseFavourite(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
         session_start();
-        $id_user = $_SESSION['id_user'];
 
-        if (!$id_user) {
+        if (!$_SESSION['id_user']) {
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        $user = Users::getIdUser($id_user, $entityManager);
+        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+            $this->forceSignOut($entityManager, $_SESSION['id_user']);
+
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $user = Users::getIdUser($_SESSION['id_user'], $entityManager);
 
         if (!$user) {
             return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
         }
 
-        $thisUser = $entityManager->find(Users::class, $id_user);
+        $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
 
         $exercise = Exercises::isActive($id, $entityManager);
 
@@ -75,10 +86,38 @@ class FavoriteExercisesController extends AbstractController
 
         $newFavourite->setUser($thisUser);
         $newFavourite->setExercise($thisExercise);
+        $newFavourite->setActive(true);
 
         $entityManager->persist($newFavourite);
         $entityManager->flush();
 
         return $this->json(['type' => 'success', 'message' => 'Exercise added to favorite correctly'], Response::HTTP_OK);
+    }
+
+    #[Route('/undoFavorite/{id<\d+>}', name: 'api_undoFavorite', methods: ['DELETE', 'POST'])]
+    public function undoFavorite(EntityManagerInterface $entityManager, int $id): JsonResponse
+    {
+        session_start();
+
+        if (!$_SESSION['id_user']) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+            $this->forceSignOut($entityManager, $_SESSION['id_user']);
+
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $favourite =  $entityManager->getRepository(FavoriteExercises::class)->findOneBy(['user' => $_SESSION['id_user'], 'exercise' => $id]);
+
+        if (!$favourite) {
+            return $this->json(['type' => 'error', 'message' => 'You have not added this exercise to your favorites or this exercise does not exist'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $entityManager->remove($favourite);
+        $entityManager->flush();
+
+        return $this->json(['type' => 'success', 'message' => 'Exercise successfully removed from favorites'], Response::HTTP_OK);
     }
 }

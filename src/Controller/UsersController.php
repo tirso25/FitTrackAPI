@@ -19,6 +19,7 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/users')]
 class UsersController extends AbstractController
 {
+    //!CON JS AL DEVOLVER UN JSON CON EL active SE PUEDE FILTAR EN EL FRONT POR active SIN NECESIDAD DE CREAR UN METODO DE seeAllActiveUsers Y QUITARNIOS EL RECARGAR LA PÁGINA PUDIENDIO HACER UN Switches PARA ALTERNAR ENTRE ACTIVOS O TODOS
     #[Route('/seeAllUsers', name: 'api_seeAllUsers', methods: ['GET'])]
     public function seeAllUsers(EntityManagerInterface $entityManager): JsonResponse
     {
@@ -378,6 +379,10 @@ class UsersController extends AbstractController
 
         $roles = $entityManager->getRepository(Roles::class)->findAll();
 
+        if (!$roles) {
+            return $this->json(['type' => 'warning', 'message' => 'No roles found'], Response::HTTP_OK);
+        }
+
         $rolesData = [];
 
         foreach ($roles as $data) {
@@ -408,8 +413,12 @@ class UsersController extends AbstractController
             $username = Users::validate(strtolower($data['username'] ?? ""));
             $password = Users::validate($data['password']);
             $roleId = (int)Users::validate($data['role']) ?? "";
-            $public = filter_var($data['public'] ?? null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-            $active = filter_var($data['active'] ?? null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            $public = array_key_exists('active', $data)
+                ? filter_var($data['active'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+                : null;
+            $active = array_key_exists('active', $data)
+                ? filter_var($data['active'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+                : null;
 
             $password_regex = "/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{5,}$/";
             $username_regex = "/^[a-z0-9]{5,20}$/";
