@@ -40,8 +40,9 @@ class Users
     #[ORM\JoinColumn(name: 'role_id', referencedColumnName: 'id_role')]
     private ?Roles $role = null;
 
-    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
-    private ?bool $active = null;
+    #[Assert\Choice(choices: ['pending', 'active', 'deleted'], message: 'Choose a valid status.')]
+    #[ORM\Column(type: Types::STRING, length: 20, options: ['default' => 'pending'])]
+    private ?string $status = 'pending';
 
     #[ORM\Column(length: 255, type: Types::STRING)]
     private ?string $token = null;
@@ -51,6 +52,9 @@ class Users
 
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
     private ?bool $public = null;
+
+    #[ORM\Column(type: Types::INTEGER)]
+    private ?int $verification_code = null;
 
     #[ORM\OneToMany(targetEntity: FavoriteExercises::class, mappedBy: 'user', orphanRemoval: true)]
     private Collection $favoriteExercises;
@@ -113,14 +117,14 @@ class Users
         return $this;
     }
 
-    public function getActive(): ?bool
+    public function getStatus()
     {
-        return $this->active;
+        return $this->status;
     }
 
-    public function setActive(bool $active): static
+    public function setStatus($status)
     {
-        $this->active = $active;
+        $this->status = $status;
 
         return $this;
     }
@@ -172,6 +176,17 @@ class Users
         return $this;
     }
 
+    public function getVerificationCode(): int
+    {
+        return $this->verification_code;
+    }
+
+    public function setVerificationCode($verification_code): static
+    {
+        $this->verification_code = $verification_code;
+
+        return $this;
+    }
 
     public static function validate($data)
     {
@@ -214,20 +229,6 @@ class Users
 
         $entityManager->flush();
     }
-
-    public static function tokenExisting(string $token, $entityManager)
-    {
-        return $entityManager->getRepository(Users::class)->findOneBy(['token' => $token]);
-    }
-
-    // public static function userExisting(string $email, string $username, $entityManager)
-    // {
-    //     $emailExisting = $entityManager->getRepository(Users::class)->findOneBy(['email' => $email]);
-    //     $usernameExisting = $entityManager->getRepository(Users::class)->findOneBy(['username' => $username]);
-
-    //     // Si alguno de los 2 no es null significa que el usuario ya existe
-    //     return $emailExisting !== null || $usernameExisting !== null;
-    // }
 
     public static function userExisting(string $email, string $username, $entityManager)
     {
@@ -286,15 +287,13 @@ class Users
     public static function getIdUser($emailUsernameId, $entityManager)
     {
         $query = $entityManager->createQuery(
-            'SELECT u.id_usr 
+            "SELECT u 
             FROM App\Entity\Users u 
-            WHERE (u.email = :emailUsernameId OR u.username = :emailUsernameId OR u.id_usr = :emailUsernameId) 
-            AND u.active = true'
+            WHERE (u.email = :emailUsernameId OR u.username = :emailUsernameId OR u.id_usr = :emailUsernameId)"
         )
-            ->setParameter('emailUsernameId', $emailUsernameId)
-            ->getOneOrNullResult();
+            ->setParameter('emailUsernameId', $emailUsernameId);
 
-        return $query ? $query['id_usr'] : null;
+        return $query->getOneOrNullResult();
     }
 
     public static function checkState($entityManager, int $userId)
@@ -305,6 +304,6 @@ class Users
 
         $user = $entityManager->find(Users::class, $userId);
 
-        return ($user->getActive());
+        return ($user->getStatus());
     }
 }

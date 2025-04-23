@@ -25,7 +25,6 @@ class ExercisesController extends AbstractController
         unset($_SESSION['id_user']);
     }
 
-    //!CON JS AL DEVOLVER UN JSON CON EL active SE PUEDE FILTAR EN EL FRONT POR active SIN NECESIDAD DE CREAR UN METODO DE seeAllActiveExercises Y QUITARNIOS EL RECARGAR LA PÁGINA PUDIENDIO HACER UN Switches PARA ALTERNAR ENTRE ACTIVOS O TODOS
     #[Route('/seeAllExercises', name: 'api_seeAllExercises', methods: ['GET'])]
     public function seeAllExercises(EntityManagerInterface $entityManager): JsonResponse
     {
@@ -35,7 +34,7 @@ class ExercisesController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
             $this->forceSignOut($entityManager, $_SESSION['id_user']);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
@@ -70,7 +69,6 @@ class ExercisesController extends AbstractController
         return $this->json($data, Response::HTTP_OK);
     }
 
-    //!SE CREA POS SI SE QUIERE CONSUMIR COMO API, NO SE USA EN EL FRONT
     #[Route('/seeAllActiveExercises', name: 'api_seeAllActiveExercises', methods: ['GET'])]
     public function seeAllActiveExercises(EntityManagerInterface $entityManager): JsonResponse
     {
@@ -89,7 +87,7 @@ class ExercisesController extends AbstractController
                 'id_exe' => $exercise->getIdExe(),
                 'name' => $exercise->getName(),
                 'description' => $exercise->getDescription(),
-                'category' => $exercise->getCategory(),
+                'category' => $exercise->getCategory()->getName(),
                 'likes' => $exercise->getLikes(),
             ];
         }
@@ -139,7 +137,7 @@ class ExercisesController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
             $this->forceSignOut($entityManager, $_SESSION['id_user']);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
@@ -206,7 +204,7 @@ class ExercisesController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
             $this->forceSignOut($entityManager, $_SESSION['id_user']);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
@@ -241,7 +239,7 @@ class ExercisesController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
             $this->forceSignOut($entityManager, $_SESSION['id_user']);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
@@ -276,7 +274,7 @@ class ExercisesController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
             $this->forceSignOut($entityManager, $_SESSION['id_user']);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);

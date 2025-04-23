@@ -32,7 +32,7 @@ class CategoriesController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
             $this->forceSignOut($entityManager, $_SESSION['id_user']);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
@@ -73,7 +73,7 @@ class CategoriesController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
             $this->forceSignOut($entityManager, $_SESSION['id_user']);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
@@ -111,7 +111,7 @@ class CategoriesController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
             $this->forceSignOut($entityManager, $_SESSION['id_user']);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
@@ -161,7 +161,7 @@ class CategoriesController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
             $this->forceSignOut($entityManager, $_SESSION['id_user']);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
@@ -194,7 +194,7 @@ class CategoriesController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
             $this->forceSignOut($entityManager, $_SESSION['id_user']);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
@@ -227,7 +227,7 @@ class CategoriesController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
             $this->forceSignOut($entityManager, $_SESSION['id_user']);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);

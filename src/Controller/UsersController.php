@@ -10,15 +10,24 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Routing\Attribute\Route;
-
+use Symfony\Component\Mime\Email;
 
 //!SECURIZAR EN CUANTO A role
-//!VER NUEVOS CAMBIOS CON PUBLIC (perfil publico)
 
 #[Route('/api/users')]
 class UsersController extends AbstractController
 {
+    private function forceSignOut(EntityManagerInterface $entityManager, int $id_user)
+    {
+        Users::removeToken($entityManager, $id_user);
+
+        setcookie("token", "", time() - 3600, "/");
+
+        unset($_SESSION['id_user']);
+    }
+
     //!CON JS AL DEVOLVER UN JSON CON EL active SE PUEDE FILTAR EN EL FRONT POR active SIN NECESIDAD DE CREAR UN METODO DE seeAllActiveUsers Y QUITARNIOS EL RECARGAR LA PÁGINA PUDIENDIO HACER UN Switches PARA ALTERNAR ENTRE ACTIVOS O TODOS
     #[Route('/seeAllUsers', name: 'api_seeAllUsers', methods: ['GET'])]
     public function seeAllUsers(EntityManagerInterface $entityManager): JsonResponse
@@ -29,7 +38,7 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
             $this->forceSignOut($entityManager, $_SESSION['id_user']);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
@@ -56,7 +65,7 @@ class UsersController extends AbstractController
                 'email' => $user->getEmail(),
                 'username' => $user->getUsername(),
                 'role' => $user->getRole()->getName(),
-                'active' => $user->getActive(),
+                'status' => $user->getStatus(),
                 'date_union' => $user->getDateUnion()
             ];
         }
@@ -73,7 +82,7 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
             $this->forceSignOut($entityManager, $_SESSION['id_user']);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
@@ -108,7 +117,7 @@ class UsersController extends AbstractController
                 'username' => $user->getUsername(),
                 'password' => $user->getPassword(),
                 'role' => $user->getRole()->getName(),
-                'active' => $user->getActive(),
+                'status' => $user->getStatus(),
                 'date_union' => $user->getDateUnion()
             ];
         }
@@ -161,9 +170,10 @@ class UsersController extends AbstractController
         $newUser->setUsername($username);
         $newUser->setPassword(Users::hashPassword($password));
         $newUser->setRole($role);
-        $newUser->setActive(true);
+        $newUser->setStatus('pending');
         $newUser->setPublic(true);
         $newUser->setDateUnion(new \DateTime());
+
 
         $entityManager->persist($newUser);
         $entityManager->flush();
@@ -201,10 +211,21 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'Invalid password format'], Response::HTTP_BAD_REQUEST);
         }
 
-        $id_user = Users::getIdUser($email, $entityManager);
+        $user = Users::getIdUser($email, $entityManager);
+        $state_user = $user->getStatus();
 
-        if (!$id_user) {
+        if (!$user) {
             return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $id_user = $user->getIdUsr();
+
+        //! https://codepen.io/pen Link para usar el sweetalert, para cuando el usuario no verifica el código
+        switch ($state_user) {
+            case "pending":
+                return $this->json(['type' => 'warning', 'message' => 'This user is pending activation'], Response::HTTP_BAD_REQUEST);
+            case "deleted":
+                return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
         }
 
         if (!Users::passwordsMatch($email, $password, $entityManager)) {
@@ -228,15 +249,6 @@ class UsersController extends AbstractController
         return $this->json(['type' => 'success', 'message' => 'Session successfully started'], Response::HTTP_OK);
     }
 
-    private function forceSignOut(EntityManagerInterface $entityManager, int $id_user)
-    {
-        Users::removeToken($entityManager, $id_user);
-
-        setcookie("token", "", time() - 3600, "/");
-
-        unset($_SESSION['id_user']);
-    }
-
     #[Route('/singOut', name: 'api_signOut', methods: ['POST'])]
     public function signOut(EntityManagerInterface $entityManager): JsonResponse
     {
@@ -246,7 +258,7 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
             $this->forceSignOut($entityManager, $_SESSION['id_user']);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
@@ -265,7 +277,7 @@ class UsersController extends AbstractController
         if (isset($_COOKIE['token'])) {
             $token = $_COOKIE['token'];
 
-            $user = Users::tokenExisting($token, $entityManager);
+            $user = $entityManager->getRepository(Users::class)->findOneBy(['token' => $token]);;
 
             if ($user) {
                 $_SESSION['id_user'] = $user->getIdUsr();
@@ -287,7 +299,7 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
             $this->forceSignOut($entityManager, $_SESSION['id_user']);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
@@ -306,7 +318,7 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
         }
 
-        $delUser->setActive(false);
+        $delUser->setStatus('deleted');
         $entityManager->flush();
 
 
@@ -323,7 +335,7 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
             $this->forceSignOut($entityManager, $_SESSION['id_user']);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
@@ -342,7 +354,7 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
         }
 
-        $user->setActive(true);
+        $user->setStatus('active');
 
         $entityManager->flush();
 
@@ -358,7 +370,7 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
             $this->forceSignOut($entityManager, $_SESSION['id_user']);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
@@ -398,7 +410,7 @@ class UsersController extends AbstractController
                 'email' => $user->getEmail(),
                 'username' => $user->getUsername(),
                 'public' => $user->getPublic(),
-                'active' => $user->getActive(),
+                'status' => $user->getStatus(),
                 'role_id' => $user->getRole()->getIdRole(),
                 'role_name' => $user->getRole()->getName(),
                 'roles' => $rolesData
@@ -416,14 +428,12 @@ class UsersController extends AbstractController
             $public = array_key_exists('active', $data)
                 ? filter_var($data['active'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
                 : null;
-            $active = array_key_exists('active', $data)
-                ? filter_var($data['active'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
-                : null;
+            $status = Users::validate($data['status'] ?? null);
 
             $password_regex = "/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{5,}$/";
             $username_regex = "/^[a-z0-9]{5,20}$/";
 
-            if ($username === "" || !isset($password) || $roleId === "" || $public === null || $active === null) {
+            if ($username === "" || !isset($password) || $roleId === "" || $public === null || $status === null) {
                 return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
             }
 
@@ -461,10 +471,12 @@ class UsersController extends AbstractController
 
                     $user->setRole($role);
                 }
+            }
 
-                if ($active !== null) {
-                    $user->setActive($active);
-                }
+            if (in_array($status, ['active', 'deleted'])) {
+                $user->setActive($status);
+            } else {
+                return $this->json(['type' => 'error', 'message' => 'Invalid status'], Response::HTTP_BAD_REQUEST);
             }
 
             $entityManager->flush();
@@ -484,15 +496,91 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!Users::checkState($entityManager, $_SESSION['id_user'])) {
+        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
             $this->forceSignOut($entityManager, $_SESSION['id_user']);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
         }
 
         $thisUser = $entityManager->find(Users::class,  $_SESSION['id_user']);
-        $role = $thisUser->getRole()->getName();
 
-        return $this->json(['ID' =>  $_SESSION['id_user'], 'ROLE' => $role]);
+        return $this->json(['ID' =>  $thisUser->getIdUsr(), 'USERNAME' => $thisUser->getUsername(), 'ROLE' => $thisUser->getRole()->getName()]);
+    }
+
+    //!https://codepen.io/pen <- Link para la notificación para poner el email
+    #[Route('/sendEmail', name: 'app_activeUser', methods: ['POST'])]
+    public function sendEmail(EntityManagerInterface $entityManager, MailerInterface $mailer, Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        $email = Users::validate(strtolower($data['email'] ?? ""));
+
+        if ($email === "") {
+            return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 255) {
+            return $this->json(['type' => 'error', 'message' => 'Invalid email format'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $user = $entityManager->getRepository(Users::class)->findOneBy(['email' => $email]);
+
+        if (!$user) {
+            return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $verificationCode = random_int(100000, 999999);
+
+        $user->setVerificationCode($verificationCode);
+
+        $entityManager->flush();
+
+        $sendEmail = (new Email())
+            ->from('fittracktfg@gmail.com')
+            ->to($email)
+            ->subject('Bienvenido a FitTrack')
+            ->html(
+                '<html>
+                <body>
+                    <h1>¡Gracias por registrarte en FitTrack!</h1>
+                    <p>Nos alegra que te hayas unido a nuestra comunidad.</p>
+                    <p>Aquí tienes tu codigo de verificación:</p>
+                    <h2>' . $verificationCode . '</h2>
+                    <p>¡Que disfrutes de la app!</p>
+                    <img src="cid:fittrack_logo" alt="Logo de FitTrack" style="width: 250px; height: auto;"/>
+                </body>
+            </html>'
+            )
+            ->embedFromPath('assets/img/FTLogo.png', 'fittrack_logo');
+
+        $mailer->send($sendEmail);
+
+        return $this->json(['type' => 'error', 'message' => 'Email sent successfully'], Response::HTTP_OK);
+    }
+
+    #[Route('/checkCode', name: 'api_checkCode', methods: ['POST'])]
+    public function checkCode(EntityManagerInterface $entityManager, Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        $verificationCode = (int)Users::validate($data['verificationCode']) ?? "";
+
+        if ($verificationCode === "") {
+            return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $code = $entityManager->getRepository(Users::class)->findOneBy(['verification_code' => $verificationCode]);
+
+        if (!$code) {
+            return $this->json(['type' => 'error', 'message' => 'Invalid verification code'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $code->setVerificationCode(null);
+        $code->setStatus('active');
+
+        $entityManager->persist($code);
+        $entityManager->flush();
+
+        return $this->json(['type' => 'success', 'message' => 'User successfully activated'], Response::HTTP_CREATED);
     }
 }
