@@ -5,19 +5,19 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ArrayCollection;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 use Doctrine\DBAL\Types\Types;
 
 #[ORM\Entity]
-#[ORM\Table(name: 'categories', uniqueConstraints: [
-    new ORM\UniqueConstraint(name: 'UNIQ_CATEGORY_NAME', fields: ['name'])
-])]
+#[ORM\Table(name: 'categories')]
+#[UniqueEntity(fields: ['name'], message: 'This name is already taken')]
 class Categories
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
-    private ?int $id_cat = null;
+    private ?int $category_id = null;
 
     #[ORM\Column(length: 50, type: Types::STRING, unique: true)]
     #[Assert\NotBlank(message: "The name cannot be empty")]
@@ -26,7 +26,7 @@ class Categories
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
     private ?bool $active = null;
 
-    #[ORM\OneToMany(targetEntity: Exercises::class, mappedBy: 'category')]
+    #[ORM\OneToMany(targetEntity: Exercises::class, mappedBy: 'category', orphanRemoval: true)]
     private Collection $exercises;
 
     public function __construct()
@@ -34,9 +34,9 @@ class Categories
         $this->exercises = new ArrayCollection();
     }
 
-    public function getIdCat(): ?int
+    public function getCategoryId(): ?int
     {
-        return $this->id_cat;
+        return $this->category_id;
     }
 
     public function getName(): ?string
@@ -71,41 +71,5 @@ class Categories
     {
         $this->active = $active;
         return $this;
-    }
-
-    public static function validate($data)
-    {
-        return htmlspecialchars(stripslashes(trim($data)), ENT_QUOTES, 'UTF-8');
-    }
-
-    public static function categoryExisting(string $name, $entityManager)
-    {
-        $role = $entityManager->getRepository(Categories::class)->findOneBy(['name' => $name]);
-
-        return $role !== null;
-    }
-
-    public static function categoryExisting2(int $id, string $name, $entityManager)
-    {
-        $query2 = $entityManager->createQuery(
-            'SELECT u.name FROM App\Entity\Categories u WHERE u.id_cat = :id'
-        )->setParameter('id', $id);
-
-        $result = $query2->getOneOrNullResult();
-
-        if (!$result || !isset($result['name'])) {
-            return false;
-        }
-
-        $nameDB = $result['name'];
-
-        $query = $entityManager->createQuery(
-            'SELECT u FROM App\Entity\Categories u WHERE u.name = :name AND u.name != :nameDB'
-        )->setParameters([
-            'name' => $name,
-            'nameDB' => $nameDB
-        ]);
-
-        return $query->getOneOrNullResult() !== null;
     }
 }

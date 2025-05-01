@@ -10,16 +10,14 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity]
-#[ORM\Table(name: 'exercises', uniqueConstraints: [
-    new ORM\UniqueConstraint(name: 'UNIQ_EXERCISE_NAME', fields: ['name'])
-])]
+#[ORM\Table(name: 'exercises')]
 #[UniqueEntity(fields: ['name'], message: 'This exercise name is already taken')]
 class Exercises
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER)]
-    private ?int $id_exe = null;
+    private ?int $exercise_id = null;
 
     #[ORM\Column(length: 30, type: Types::STRING, unique: true)]
     #[Assert\NotBlank(message: "The name cannot be empty")]
@@ -30,13 +28,9 @@ class Exercises
     private ?string $description = null;
 
     #[ORM\ManyToOne(targetEntity: Categories::class, inversedBy: 'exercises')]
-    #[ORM\JoinColumn(name: 'category', referencedColumnName: 'id_cat', nullable: false)]
+    #[ORM\JoinColumn(name: 'category', referencedColumnName: 'category_id', nullable: false)]
     #[Assert\NotNull]
     private ?Categories $category = null;
-
-    #[ORM\Column(type: Types::INTEGER)]
-    #[Assert\NotNull]
-    private ?int $likes = null;
 
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
     private ?bool $active = null;
@@ -44,14 +38,17 @@ class Exercises
     #[ORM\OneToMany(targetEntity: FavoriteExercises::class, mappedBy: 'exercise', orphanRemoval: true)]
     private Collection $favoriteExercises;
 
+    #[ORM\OneToOne(mappedBy: 'exercise', targetEntity: ExerciseLikes::class, cascade: ['persist', 'remove'])]
+    private ?ExerciseLikes $exerciseLikes = null;
+
     public function __construct()
     {
         $this->favoriteExercises = new ArrayCollection();
     }
 
-    public function getIdExe(): ?int
+    public function getExerciseId(): ?int
     {
-        return $this->id_exe;
+        return $this->exercise_id;
     }
 
     public function getName(): ?string
@@ -87,17 +84,6 @@ class Exercises
         return $this;
     }
 
-    public function getLikes(): ?int
-    {
-        return $this->likes;
-    }
-
-    public function setLikes(int $likes): static
-    {
-        $this->likes = $likes;
-        return $this;
-    }
-
     public function getActive(): ?bool
     {
         return $this->active;
@@ -120,48 +106,15 @@ class Exercises
         return $this;
     }
 
-    public static function validate($data)
+    public function getExerciseLikes()
     {
-        return htmlspecialchars(stripslashes(trim($data)), ENT_QUOTES, 'UTF-8');
+        return $this->exerciseLikes;
     }
 
-    public static function exerciseExisting(string $name, $entityManager)
+    public function setExerciseLikes($exerciseLikes)
     {
-        $exercise = $entityManager->getRepository(Exercises::class)->findOneBy(['name' => $name]);
+        $this->exerciseLikes = $exerciseLikes;
 
-        return $exercise !== null;
-    }
-
-    public static function exerciseExisting2(int $id, string $name, $entityManager)
-    {
-        $query2 = $entityManager->createQuery(
-            'SELECT u.name FROM App\Entity\Exercises u WHERE u.id_exe = :id'
-        )->setParameter('id', $id);
-
-        $result = $query2->getOneOrNullResult();
-
-        if (!$result || !isset($result['name'])) {
-            return false;
-        }
-
-        $nameDB = $result['name'];
-
-        $query = $entityManager->createQuery(
-            'SELECT u FROM App\Entity\Exercises u WHERE u.name = :name AND u.name != :nameDB'
-        )->setParameters([
-            'name' => $name,
-            'nameDB' => $nameDB
-        ]);
-
-        return $query->getOneOrNullResult() !== null;
-    }
-
-    public static function isActive(int $id, $entityManager)
-    {
-        $query = $entityManager->createQuery(
-            'SELECT u FROM App\Entity\Exercises u WHERE u.id_exe = :id AND u.active = true'
-        )->setParameter('id', $id);
-
-        return $query->getOneOrNullResult() !== null;
+        return $this;
     }
 }

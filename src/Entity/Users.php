@@ -10,10 +10,7 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity]
-#[ORM\Table(name: 'users', uniqueConstraints: [
-    new ORM\UniqueConstraint(name: 'UNIQ_USER_EMAIL', fields: ['email']),
-    new ORM\UniqueConstraint(name: 'UNIQ_USER_USERNAME', fields: ['username'])
-])]
+#[ORM\Table(name: 'users')]
 #[UniqueEntity(fields: ['email'], message: 'There is already an account with this email')]
 #[UniqueEntity(fields: ['username'], message: 'This username is already taken')]
 class Users
@@ -21,7 +18,7 @@ class Users
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER)]
-    private ?int $id_usr = null;
+    private ?int $user_id = null;
 
     #[ORM\Column(length: 255, type: Types::STRING, unique: true)]
     #[Assert\NotBlank(message: "The email cannot be empty")]
@@ -36,37 +33,41 @@ class Users
     #[Assert\NotNull]
     private ?string $password = null;
 
-    #[ORM\ManyToOne(targetEntity: Roles::class)]
-    #[ORM\JoinColumn(name: 'role_id', referencedColumnName: 'id_role')]
+    #[ORM\ManyToOne(targetEntity: Roles::class, inversedBy: 'users')]
+    #[ORM\JoinColumn(name: 'role', referencedColumnName: 'role_id', nullable: false)]
+    #[Assert\NotNull]
     private ?Roles $role = null;
 
     #[Assert\Choice(choices: ['pending', 'active', 'deleted'], message: 'Choose a valid status.')]
     #[ORM\Column(type: Types::STRING, length: 20, options: ['default' => 'pending'])]
     private ?string $status = 'pending';
 
-    #[ORM\Column(length: 255, type: Types::STRING)]
+    #[ORM\Column(length: 255, type: Types::STRING, nullable: true)]
     private ?string $token = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, options: ['default' => 'CURRENT_TIMESTAMP'])]
-    private ?\DateTime $dateUnion = null;
+    private ?\DateTime $date_union = null;
 
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
     private ?bool $public = null;
 
-    #[ORM\Column(type: Types::INTEGER)]
+    #[ORM\Column(type: Types::INTEGER, nullable: true)]
     private ?int $verification_code = null;
 
     #[ORM\OneToMany(targetEntity: FavoriteExercises::class, mappedBy: 'user', orphanRemoval: true)]
     private Collection $favoriteExercises;
+
+    #[ORM\Column(length: 500, type: Types::STRING)]
+    private ?string $description = null;
 
     public function __construct()
     {
         $this->favoriteExercises = new ArrayCollection();
     }
 
-    public function getIdUsr(): ?int
+    public function getUserId(): ?int
     {
-        return $this->id_usr;
+        return $this->user_id;
     }
 
     public function getEmail(): ?string
@@ -155,12 +156,13 @@ class Users
 
     public function getDateUnion(): ?\DateTime
     {
-        return $this->dateUnion;
+        return $this->date_union;
     }
 
-    public function setDateUnion(?\DateTime $dateUnion = null): static
+    public function setDateUnion(?\DateTime $date_union): static
     {
-        $this->dateUnion = $dateUnion;
+        $this->date_union = $date_union;
+
         return $this;
     }
 
@@ -176,7 +178,7 @@ class Users
         return $this;
     }
 
-    public function getVerificationCode(): int
+    public function getVerificationCode(): ?int
     {
         return $this->verification_code;
     }
@@ -188,122 +190,14 @@ class Users
         return $this;
     }
 
-    public static function validate($data)
+    public function getDescription(): ?string
     {
-        return htmlspecialchars(stripslashes(trim($data)), ENT_QUOTES, 'UTF-8');
+        return $this->description;
     }
 
-    public static function hashPassword(string $password)
+    public function setDescription(string $description): static
     {
-        $options = [
-            'cost' => 13,
-        ];
-
-        return password_hash($password, PASSWORD_BCRYPT, $options);
-    }
-
-    public static function passwordVerify(string $userPassword, string $hashedPawword)
-    {
-        return password_verify($userPassword, $hashedPawword);
-    }
-
-    public static function generatorToken()
-    {
-        return bin2hex(random_bytes(32));
-    }
-
-    public static function saveToken($entityManager, int $id_user, string $token)
-    {
-        $user = $entityManager->find(Users::class, $id_user);
-
-        $user->setToken($token);
-
-        $entityManager->flush();
-    }
-
-    public static function removeToken($entityManager, int $id_user)
-    {
-        $user = $entityManager->getRepository(Users::class)->findOneBy(['id_usr' => $id_user]);
-
-        $user->setToken(null);
-
-        $entityManager->flush();
-    }
-
-    public static function userExisting(string $email, string $username, $entityManager)
-    {
-        $query = $entityManager->createQuery(
-            'SELECT u FROM App\Entity\Users u WHERE u.email = :email OR u.username = :username'
-        )->setParameters([
-            'email' => $email,
-            'username' => $username
-        ]);
-
-        return $query->getOneOrNullResult() !== null;
-    }
-
-    public static function userExisting2(int $id, string $username, $entityManager)
-    {
-        $query2 = $entityManager->createQuery(
-            'SELECT u.username FROM App\Entity\Users u WHERE u.id_usr = :id'
-        )->setParameter('id', $id);
-
-        $result = $query2->getOneOrNullResult();
-
-        if (!$result || !isset($result['username'])) {
-            return false;
-        }
-
-        $usernameDB = $result['username'];
-
-        $query = $entityManager->createQuery(
-            'SELECT u FROM App\Entity\Users u WHERE u.username = :username AND u.username != :usernameDB'
-        )->setParameters([
-            'username' => $username,
-            'usernameDB' => $usernameDB
-        ]);
-
-        return $query->getOneOrNullResult() !== null;
-    }
-
-    public static function passwordsMatch(string $email, string $password, $entityManager)
-    {
-        if (Users::userExisting($email, $email, $entityManager)) {
-            $query = $entityManager->createQuery(
-                'SELECT u.password FROM App\Entity\Users u WHERE u.email = :email OR u.username = :username'
-            )->setParameters([
-                'email' => $email,
-                'username' => $email
-            ]);
-
-            $hashedPassword = $query->getSingleScalarResult();
-
-            return Users::passwordVerify($password, $hashedPassword);
-        }
-
-        return false;
-    }
-
-    public static function getIdUser($emailUsernameId, $entityManager)
-    {
-        $query = $entityManager->createQuery(
-            "SELECT u 
-            FROM App\Entity\Users u 
-            WHERE (u.email = :emailUsernameId OR u.username = :emailUsernameId OR u.id_usr = :emailUsernameId)"
-        )
-            ->setParameter('emailUsernameId', $emailUsernameId);
-
-        return $query->getOneOrNullResult();
-    }
-
-    public static function checkState($entityManager, int $userId)
-    {
-        if ($userId === null) {
-            return false;
-        }
-
-        $user = $entityManager->find(Users::class, $userId);
-
-        return ($user->getStatus());
+        $this->description = $description;
+        return $this;
     }
 }

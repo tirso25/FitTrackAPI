@@ -12,17 +12,17 @@ class FavoriteExercises
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER)]
-    private ?int $id_fe = null;
+    private ?int $favorite_id = null;
 
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
     private ?bool $active = null;
 
     #[ORM\ManyToOne(targetEntity: Users::class, inversedBy: 'favorite_exercises')]
-    #[ORM\JoinColumn(name: 'id_usr', referencedColumnName: 'id_usr', nullable: false)]
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'user_id', nullable: false)]
     private ?Users $user = null;
 
     #[ORM\ManyToOne(targetEntity: Exercises::class, inversedBy: 'favorite_exercises')]
-    #[ORM\JoinColumn(name: 'id_exe', referencedColumnName: 'id_exe', nullable: false)]
+    #[ORM\JoinColumn(name: 'exercise_id', referencedColumnName: 'exercise_id', nullable: false)]
     private ?Exercises $exercise = null;
 
     public function getUser(): ?Users
@@ -47,84 +47,20 @@ class FavoriteExercises
         return $this;
     }
 
-    public function getIdFe()
+    public function getFavoriteId(): ?int
     {
-        return $this->id_fe;
+        return $this->favorite_id;
     }
 
-    public function getActive()
+    public function getActive(): ?bool
     {
         return $this->active;
     }
 
-    public function setActive($active)
+    public function setActive(bool $active): static
     {
         $this->active = $active;
 
         return $this;
-    }
-
-    public static function getFavouriteExercisesByUserId(int $id, $entityManager): array
-    {
-        $query = $entityManager->createQuery(
-            'SELECT fe
-            FROM App\Entity\FavoriteExercises fe
-            JOIN fe.user u
-            WHERE fe.user = :id_user AND u.public = true'
-        )->setParameter('id_user', $id);
-
-        $favorites = $query->getResult();
-
-        $data = [];
-
-        if (empty($favorites)) {
-            $data = ['type' => 'warning', 'message' => 'This user has a private profile or no bookmarks'];
-        }
-
-        foreach ($favorites as $favourite) {
-            $data[] = [
-                'type' => 'success',
-                'message' => [
-                    'id_exe' => $favourite->getExercise()->getIdExe(),
-                    'name_exe' => $favourite->getExercise()->getName(),
-                    'description_exe' => $favourite->getExercise()->getDescription(),
-                    'category_exe' => $favourite->getExercise()->getCategory()->getName()
-                ]
-            ];
-        }
-
-        return $data;
-    }
-
-    public static function getFavouriteExercises(int $id, $entityManager): array
-    {
-        $query = $entityManager->createQuery(
-            'SELECT fe
-            FROM App\Entity\FavoriteExercises fe
-            JOIN fe.user u
-            WHERE fe.user = :id_user'
-        )->setParameter('id_user', $id);
-
-        $favorites = $query->getResult();
-
-        $data = [];
-
-        if (empty($favorites)) {
-            $data = ['type' => 'warning', 'message' => 'You have no exercises added to favorites'];
-        }
-
-        foreach ($favorites as $favourite) {
-            $data[] = [
-                'type' => 'success',
-                'message' => [
-                    'id_exe' => $favourite->getExercise()->getIdExe(),
-                    'name_exe' => $favourite->getExercise()->getName(),
-                    'description_exe' => $favourite->getExercise()->getDescription(),
-                    'category_exe' => $favourite->getExercise()->getCategory()->getName()
-                ]
-            ];
-        }
-
-        return $data;
     }
 }

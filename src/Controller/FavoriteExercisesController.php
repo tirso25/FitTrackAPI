@@ -5,70 +5,67 @@ namespace App\Controller;
 use App\Entity\Exercises;
 use App\Entity\FavoriteExercises;
 use App\Entity\Users;
+use App\Service\ExerciseService;
+use App\Service\FavoriteExercisesService;
+use App\Service\GlobalService;
+use App\Service\UserService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 //!VER NUEVOS CAMBIOS CON PUBLIC (perfil publico)
 
 #[Route('/api/favoriteExercises')]
 class FavoriteExercisesController extends AbstractController
 {
-    private function forceSignOut(EntityManagerInterface $entityManager, int $id_user)
-    {
-        Users::removeToken($entityManager, $id_user);
-
-        setcookie("token", "", time() - 3600, "/");
-
-        unset($_SESSION['id_user']);
-    }
+    public function __construct(
+        private UserService $userService,
+        private GlobalService $globalService,
+        private FavoriteExercisesService $favoriteExercisesService,
+        private ExerciseService $exerciseService,
+    ) {}
 
     #[Route('/seeFavoriteExercises', name: 'api_seeFavoriteExercises', methods: ['GET'])]
-    public function seeAllFavouritesExercises(EntityManagerInterface $entityManager): JsonResponse
+    public function seeAllFavouritesExercises(EntityManagerInterface $entityManager, SessionInterface $session): JsonResponse
     {
-        session_start();
+        $idUser = $session->get('user_id');
 
-        if (!$_SESSION['id_user']) {
+        if (!$idUser) {
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
-            $this->forceSignOut($entityManager, $_SESSION['id_user']);
+        if ($this->userService->checkState($entityManager, $idUser) !== "active") {
+            $this->globalService->forceSignOut($entityManager, $idUser, $session);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
         }
 
-        $favourites = FavoriteExercises::getFavouriteExercises($_SESSION['id_user'], $entityManager);
+        $favourites = $this->favoriteExercisesService->getFavouriteExercises($idUser, $entityManager);
 
         return $this->json($favourites, Response::HTTP_OK);
     }
 
     #[Route('/addFavoriteExercise/{id<\d+>}', name: 'api_addFavoriteExercise', methods: ['POST'])]
-    public function addExerciseFavourite(EntityManagerInterface $entityManager, int $id): JsonResponse
+    public function addExerciseFavourite(EntityManagerInterface $entityManager, int $id, SessionInterface $session): JsonResponse
     {
-        session_start();
+        $idUser = $session->get('user_id');
 
-        if (!$_SESSION['id_user']) {
+        if (!$idUser) {
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
-            $this->forceSignOut($entityManager, $_SESSION['id_user']);
+        if ($this->userService->checkState($entityManager, $idUser) !== "active") {
+            $this->globalService->forceSignOut($entityManager, $idUser, $session);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
         }
 
-        $user = Users::getIdUser($_SESSION['id_user'], $entityManager);
+        $thisUser = $entityManager->find(Users::class, $idUser);
 
-        if (!$user) {
-            return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
-        }
-
-        $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
-
-        $exercise = Exercises::isActive($id, $entityManager);
+        $exercise = $this->exerciseService->isActive($id, $entityManager);
 
         if (!$exercise) {
             return $this->json(['type' => 'error', 'message' => 'The exercise does not exist'], Response::HTTP_BAD_REQUEST);
@@ -94,22 +91,22 @@ class FavoriteExercisesController extends AbstractController
         return $this->json(['type' => 'success', 'message' => 'Exercise added to favorite correctly'], Response::HTTP_OK);
     }
 
-    #[Route('/undoFavorite/{id<\d+>}', name: 'api_undoFavorite', methods: ['DELETE', 'POST'])]
-    public function undoFavorite(EntityManagerInterface $entityManager, int $id): JsonResponse
+    #[Route('/undoFavorite/{id<\d+>}', name: 'api_undoFavorite', methods: ['DELETE'])]
+    public function undoFavorite(EntityManagerInterface $entityManager, int $id, SessionInterface $session): JsonResponse
     {
-        session_start();
+        $idUser = $session->get('user_id');
 
-        if (!$_SESSION['id_user']) {
+        if (!$idUser) {
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
-            $this->forceSignOut($entityManager, $_SESSION['id_user']);
+        if ($this->userService->checkState($entityManager, $idUser) !== "active") {
+            $this->globalService->forceSignOut($entityManager, $idUser, $session);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
         }
 
-        $favourite =  $entityManager->getRepository(FavoriteExercises::class)->findOneBy(['user' => $_SESSION['id_user'], 'exercise' => $id]);
+        $favourite =  $entityManager->getRepository(FavoriteExercises::class)->findOneBy(['user' => $idUser, 'exercise' => $id]);
 
         if (!$favourite) {
             return $this->json(['type' => 'error', 'message' => 'You have not added this exercise to your favorites or this exercise does not exist'], Response::HTTP_BAD_REQUEST);

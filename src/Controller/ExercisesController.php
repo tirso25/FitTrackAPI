@@ -5,42 +5,45 @@ namespace App\Controller;
 use App\Entity\Categories;
 use App\Entity\Exercises;
 use App\Entity\Users;
+use App\Service\CategoryService;
+use App\Service\ExerciseService;
+use App\Service\GlobalService;
+use App\Service\UserService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 //!VER PARA QUE SOLO SEA ACCESIBLE PARA LOS ADMINS Y ENTRENADORES (EXCEPCIONES COMO VER LOS EJERCICIOS)
 #[Route('/api/exercises')]
 class ExercisesController extends AbstractController
 {
-    private function forceSignOut(EntityManagerInterface $entityManager, int $id_user)
-    {
-        Users::removeToken($entityManager, $id_user);
-
-        setcookie("token", "", time() - 3600, "/");
-
-        unset($_SESSION['id_user']);
-    }
+    public function __construct(
+        private UserService $userService,
+        private GlobalService $globalService,
+        private ExerciseService $exerciseService,
+        private CategoryService $categoryService,
+    ) {}
 
     #[Route('/seeAllExercises', name: 'api_seeAllExercises', methods: ['GET'])]
-    public function seeAllExercises(EntityManagerInterface $entityManager): JsonResponse
+    public function seeAllExercises(EntityManagerInterface $entityManager, SessionInterface $session): JsonResponse
     {
-        session_start();
+        $idUser = $session->get('user_id');
 
-        if (!$_SESSION['id_user']) {
+        if (!$idUser) {
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
-            $this->forceSignOut($entityManager, $_SESSION['id_user']);
+        if ($this->userService->checkState($entityManager, $idUser) !== "active") {
+            $this->globalService->forceSignOut($entityManager, $idUser, $session);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
         }
 
-        $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
+        $thisUser = $entityManager->find(Users::class, $idUser);
         $role = $thisUser->getRole()->getName();
 
         if ($role !== "ROLE_ADMIN") {
@@ -56,12 +59,13 @@ class ExercisesController extends AbstractController
         $data = [];
 
         foreach ($exercises as $excercise) {
+            $likes = $excercise->getExerciseLikes()?->getLikes() ?? 0;
             $data[] = [
-                'id_exe' => $excercise->getIdExe(),
+                'id_exe' => $excercise->getExerciseId(),
                 'name' => $excercise->getName(),
                 'description' => $excercise->getDescription(),
                 'category' => $excercise->getCategory()->getName(),
-                'likes' => $excercise->getLikes(),
+                'likes' => $likes,
                 'active' => $excercise->getActive()
             ];
         }
@@ -82,13 +86,15 @@ class ExercisesController extends AbstractController
 
         $data = [];
 
-        foreach ($exercises as $exercise) {
+        foreach ($exercises as $excercise) {
+            $likes = $excercise->getExerciseLikes()?->getLikes() ?? 0;
             $data[] = [
-                'id_exe' => $exercise->getIdExe(),
-                'name' => $exercise->getName(),
-                'description' => $exercise->getDescription(),
-                'category' => $exercise->getCategory()->getName(),
-                'likes' => $exercise->getLikes(),
+                'id_exe' => $excercise->getExerciseId(),
+                'name' => $excercise->getName(),
+                'description' => $excercise->getDescription(),
+                'category' => $excercise->getCategory()->getName(),
+                'likes' => $likes,
+                'active' => $excercise->getActive()
             ];
         }
 
@@ -99,29 +105,20 @@ class ExercisesController extends AbstractController
     #[Route('/seeOneExcercise/{id<\d+>}', name: 'api_seeOneExcercise', methods: ['GET'])]
     public function seeOneExcercise(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
-        session_start();
-        $id_user = $_SESSION['id_user'];
-
-        $thisUser = $entityManager->find(Users::class, $id_user);
-
-        $role = $thisUser->getRole()->getName();
-
-        if ($role !== 'ROLE_ADMIN' && !Exercises::isActive($id, $entityManager)) {
-            return $this->json(['type' => 'error', 'message' => 'The excercise does not exist'], Response::HTTP_BAD_REQUEST);
-        }
-
         $excercise = $entityManager->find(Exercises::class, $id);
 
         if (!$excercise) {
             return $this->json(['type' => 'error', 'message' => 'The excercise does not exist'], Response::HTTP_BAD_REQUEST);
         }
 
+        $likes = $excercise->getExerciseLikes()?->getLikes() ?? 0;
+
         $data[] = [
-            'id_exe' => $excercise->getIdExe(),
+            'id_exe' => $excercise->getExerciseId(),
             'name' => $excercise->getName(),
             'description' => $excercise->getDescription(),
             'category' => $excercise->getCategory()->getName(),
-            'likes' => $excercise->getLikes(),
+            'likes' => $likes,
             'active' => $excercise->getActive()
         ];
 
@@ -129,21 +126,21 @@ class ExercisesController extends AbstractController
     }
 
     #[Route('/addExercise', name: 'api_addExercise', methods: ['POST'])]
-    public function addExercise(EntityManagerInterface $entityManager, Request $request): JsonResponse
+    public function addExercise(EntityManagerInterface $entityManager, Request $request, SessionInterface $session): JsonResponse
     {
-        session_start();
+        $idUser = $session->get('user_id');
 
-        if (!$_SESSION['id_user']) {
+        if (!$idUser) {
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
-            $this->forceSignOut($entityManager, $_SESSION['id_user']);
+        if ($this->userService->checkState($entityManager, $idUser) !== "active") {
+            $this->globalService->forceSignOut($entityManager, $idUser, $session);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
         }
 
-        $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
+        $thisUser = $entityManager->find(Users::class, $idUser);
         $role = $thisUser->getRole()->getName();
 
         if ($role !== "ROLE_ADMIN") {
@@ -152,11 +149,11 @@ class ExercisesController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
 
-        $name = Exercises::validate(trim(strtolower($data['name'] ?? "")));
-        $description = Exercises::validate(trim(strtolower($data['description'] ?? "")));
-        $category_id = (int)Exercises::validate($data['category'] ?? "");
+        $name = $this->globalService->validate(trim(strtolower($data['name'] ?? "")));
+        $description = $this->globalService->validate(trim(strtolower($data['description'] ?? "")));
+        $category_id = (int)$this->globalService->validate($data['category'] ?? "");
 
-        $name_regex = "/^[a-z0-9]{1,30}$/";
+        $name_regex = "/^[a-z]{1,30}$/";
         $description_regex = "/^[a-zA-Z0-9]{10,500}$/";
 
         if ($name === "" || $description === "" || $category_id === "") {
@@ -171,7 +168,7 @@ class ExercisesController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'Invalid description format'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (Exercises::exerciseExisting($name, $entityManager)) {
+        if ($entityManager->getRepository(Exercises::class)->findOneBy(['name' => $name])) {
             return $this->json(['type' => 'error', 'message' => 'Exercise already exists'], Response::HTTP_BAD_REQUEST);
         }
 
@@ -185,7 +182,6 @@ class ExercisesController extends AbstractController
         $exercise->setName($name);
         $exercise->setDescription($description);
         $exercise->setCategory($category);
-        $exercise->setLikes(0);
         $exercise->setActive(true);
 
         $entityManager->persist($exercise);
@@ -195,92 +191,99 @@ class ExercisesController extends AbstractController
     }
 
     //!DEPENDIENDO DE LO QUE SE DIGA SE ÙEDE QUITAR PQ YA LO HACE modifyExercise
-    #[Route('/deleteExercise/{id<\d+>}', name: 'api_deleteExercise', methods: ['DELETE', 'PUT', 'POST'])]
-    public function deleteExercise(EntityManagerInterface $entityManager, int $id): JsonResponse
+    #[Route('/deleteExercise/{id<\d+>}', name: 'api_deleteExercise', methods: ['DELETE'])]
+    public function deleteExercise(EntityManagerInterface $entityManager, int $id, SessionInterface $session): JsonResponse
     {
-        session_start();
+        try {
+            $idUser = $session->get('user_id');
 
-        if (!$_SESSION['id_user']) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+            if (!$idUser) {
+                return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+            }
+
+            if ($this->userService->checkState($entityManager, $idUser) !== "active") {
+                $this->globalService->forceSignOut($entityManager, $idUser, $session);
+
+                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
+            }
+
+            $thisUser = $entityManager->find(Users::class, $idUser);
+            $role = $thisUser->getRole()->getName();
+
+            if ($role !== "ROLE_ADMIN") {
+                return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
+            }
+
+            $delexercise = $entityManager->find(Exercises::class, $id);
+
+            if (!$delexercise) {
+                return $this->json(['type' => 'error', 'message' => 'The exercise does not exist'], Response::HTTP_BAD_REQUEST);
+            }
+
+            $delexercise->setActive(false);
+            $entityManager->flush();
+
+            return $this->json(['type' => 'success', 'message' => 'Exercise successfully deleted'], Response::HTTP_CREATED);
+        } catch (\Exception $e) {
+            return $this->json(['type' => 'error', 'message' => 'An error occurred while deleting the categoey'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
-            $this->forceSignOut($entityManager, $_SESSION['id_user']);
-
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
-        }
-
-        $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
-        $role = $thisUser->getRole()->getName();
-
-        if ($role !== "ROLE_ADMIN") {
-            return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
-        }
-
-        $delexercise = $entityManager->find(Exercises::class, $id);
-
-        if (!$delexercise) {
-            return $this->json(['type' => 'error', 'message' => 'The exercise does not exist'], Response::HTTP_BAD_REQUEST);
-        }
-
-        $delexercise->setActive(false);
-        $entityManager->flush();
-
-        return $this->json(['type' => 'success', 'message' => 'Exercise successfully deleted'], Response::HTTP_CREATED);
     }
 
     //!DEPENDIENDO DE LO QUE SE DIGA SE ÙEDE QUITAR PQ YA LO HACE modifyExercise
-    #[Route('/activeExercise/{id<\d+>}', name: 'app_activeExercise', methods: ['PUT', 'POST'])]
-    public function activeExercise(EntityManagerInterface $entityManager, int $id): JsonResponse
+    #[Route('/activeExercise/{id<\d+>}', name: 'app_activeExercise', methods: ['PUT'])]
+    public function activeExercise(EntityManagerInterface $entityManager, int $id, SessionInterface $session): JsonResponse
     {
-        session_start();
+        try {
+            $idUser = $session->get('user_id');
 
-        if (!$_SESSION['id_user']) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+            if (!$idUser) {
+                return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+            }
+
+            if ($this->userService->checkState($entityManager, $idUser) !== "active") {
+                $this->globalService->forceSignOut($entityManager, $idUser, $session);
+
+                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
+            }
+
+            $thisUser = $entityManager->find(Users::class, $idUser);
+            $role = $thisUser->getRole()->getName();
+
+            if ($role !== "ROLE_ADMIN") {
+                return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
+            }
+
+            $exercise = $entityManager->find(Exercises::class, $id);
+
+            if (!$exercise) {
+                return $this->json(['type' => 'error', 'message' => 'The exercise does not exist'], Response::HTTP_BAD_REQUEST);
+            }
+
+            $exercise->setActive(true);
+            $entityManager->flush();
+
+            return $this->json(['type' => 'success', 'message' => 'Exercise successfully activated'], Response::HTTP_CREATED);
+        } catch (\Exception $e) {
+            return $this->json(['type' => 'error', 'message' => 'An error occurred while deleting the categoey'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
-            $this->forceSignOut($entityManager, $_SESSION['id_user']);
-
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
-        }
-
-        $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
-        $role = $thisUser->getRole()->getName();
-
-        if ($role !== "ROLE_ADMIN") {
-            return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
-        }
-
-        $exercise = $entityManager->find(Exercises::class, $id);
-
-        if (!$exercise) {
-            return $this->json(['type' => 'error', 'message' => 'The exercise does not exist'], Response::HTTP_BAD_REQUEST);
-        }
-
-        $exercise->setActive(true);
-
-        $entityManager->flush();
-
-        return $this->json(['type' => 'success', 'message' => 'Exercise successfully activated'], Response::HTTP_CREATED);
     }
 
-    #[Route('/modifyExercise/{id<\d+>}', name: 'api_modifyExercise', methods: ['PUT', 'POST',  'GET'])]
-    public function modifyExercise(EntityManagerInterface $entityManager, Request $request, int $id): JsonResponse
+    #[Route('/modifyExercise/{id<\d+>}', name: 'api_modifyExercise', methods: ['PUT', 'GET'])]
+    public function modifyExercise(EntityManagerInterface $entityManager, Request $request, int $id, SessionInterface $session): JsonResponse
     {
-        session_start();
+        $idUser = $session->get('user_id');
 
-        if (!$_SESSION['id_user']) {
+        if (!$idUser) {
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (Users::checkState($entityManager, $_SESSION['id_user']) !== "active") {
-            $this->forceSignOut($entityManager, $_SESSION['id_user']);
+        if ($this->userService->checkState($entityManager, $idUser) !== "active") {
+            $this->globalService->forceSignOut($entityManager, $idUser, $session);
 
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
         }
 
-        $thisUser = $entityManager->find(Users::class, $_SESSION['id_user']);
+        $thisUser = $entityManager->find(Users::class, $idUser);
         $role = $thisUser->getRole()->getName();
 
         if ($role !== "ROLE_ADMIN") {
@@ -299,32 +302,31 @@ class ExercisesController extends AbstractController
 
         foreach ($categories as $data) {
             $categoriesData[] = [
-                'id' => $data->getIdCat(),
+                'id' => $data->getCategoryId(),
                 'name' => $data->getName(),
             ];
         }
 
         if ($request->isMethod('GET')) {
             $data = [
-                'id_exe' => $excercise->getIdExe(),
+                'id_exe' => $excercise->getExerciseId(),
                 'name' => $excercise->getName(),
                 'description' => $excercise->getDescription(),
                 'category_id' => $excercise->getCategory()->getName(),
-                'category_id' => $excercise->getCategory()->getIdCat(),
+                'category_id' => $excercise->getCategory()->getCategoryId(),
                 'categories' => $categoriesData,
-                'likes' => $excercise->getLikes(),
                 'active' => $excercise->getActive()
             ];
 
             return $this->json($data, Response::HTTP_OK);
         }
 
-        if ($request->isMethod('POST') || $request->isMethod('PUT')) {
+        if ($request->isMethod('PUT')) {
             $data = json_decode($request->getContent(), true);
 
-            $name = Exercises::validate(trim(strtolower($data['name'] ?? "")));
-            $description = Exercises::validate(trim(strtolower($data['description'] ?? "")));
-            $category_id = (int)Exercises::validate($data['category'] ?? "");
+            $name = $this->globalService->validate(trim(strtolower($data['name'] ?? "")));
+            $description = $this->globalService->validate(trim(strtolower($data['description'] ?? "")));
+            $category_id = (int)$this->globalService->validate($data['category'] ?? "");
             $active = array_key_exists('active', $data)
                 ? filter_var($data['active'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
                 : null;
@@ -336,7 +338,7 @@ class ExercisesController extends AbstractController
                 return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
             }
 
-            if (Exercises::exerciseExisting2($id, $name, $entityManager)) {
+            if ($this->exerciseService->exerciseExisting2($id, $name, $entityManager)) {
                 return $this->json(['type' => 'error', 'message' => 'Exercise already exists', Response::HTTP_BAD_REQUEST]);
             }
 
@@ -348,7 +350,7 @@ class ExercisesController extends AbstractController
                 return $this->json(['type' => 'error', 'message' => 'Invalid description format'], Response::HTTP_BAD_REQUEST);
             }
 
-            $category = $entityManager->find(Categories::class, $category_id);
+            $category = $this->categoryService->categoryExisting($category_id, $entityManager);
 
             if (!$category) {
                 return $this->json(['type' => 'error', 'message' => 'Invalid category'], Response::HTTP_BAD_REQUEST);
