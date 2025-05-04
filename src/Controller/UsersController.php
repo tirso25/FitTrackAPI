@@ -6,6 +6,7 @@ use App\Entity\Roles;
 use App\Entity\Users;
 use App\Service\FavoriteExercisesService;
 use App\Service\GlobalService;
+use App\Service\ImgurService;
 use App\Service\RoleService;
 use App\Service\UserService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -28,6 +29,7 @@ class UsersController extends AbstractController
         private GlobalService $globalService,
         private FavoriteExercisesService $favoriteExercisesService,
         private RoleService $roleService,
+        private ImgurService $imgurService,
     ) {}
 
     //!CON JS AL DEVOLVER UN JSON CON EL active SE PUEDE FILTAR EN EL FRONT POR active SIN NECESIDAD DE CREAR UN METODO DE seeAllActiveUsers Y QUITARNIOS EL RECARGAR LA PÁGINA PUDIENDIO HACER UN Switches PARA ALTERNAR ENTRE ACTIVOS O TODOS
@@ -514,6 +516,19 @@ class UsersController extends AbstractController
                 } else {
                     return $this->json(['type' => 'error', 'message' => 'Invalid status'], Response::HTTP_BAD_REQUEST);
                 }
+
+                // if ($request->files->has('profile_picture')) {
+                //     $file = $request->files->get('profile_picture');
+                //     $imagePath = $file->getPathname();
+
+                //     $imgurResponse = $this->imgurService->uploadImage($imagePath);
+                //     if ($imgurResponse['success']) {
+                //         $profilePictureUrl = $imgurResponse['data']['link'];
+                //         $user->setProfilePicture($profilePictureUrl);
+                //     } else {
+                //         return $this->json(['type' => 'error', 'message' => 'Error uploading profile picture'], Response::HTTP_BAD_REQUEST);
+                //     }
+                // }
 
                 $entityManager->flush();
 
