@@ -46,8 +46,8 @@ class ExercisesController extends AbstractController
         $thisUser = $entityManager->find(Users::class, $idUser);
         $role = $thisUser->getRole()->getName();
 
-        if ($role !== "ROLE_ADMIN") {
-            return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
+        if (!in_array($role, ["ROLE_ADMIN", "ROLE_COACH"])) {
+            return $this->json(['type' => 'error', 'message' => 'You are not an administrator or a coach'], Response::HTTP_BAD_REQUEST);
         }
 
         $exercises = $entityManager->getRepository(Exercises::class)->findAll();
@@ -66,7 +66,9 @@ class ExercisesController extends AbstractController
                 'description' => $excercise->getDescription(),
                 'category' => $excercise->getCategory()->getName(),
                 'likes' => $likes,
-                'active' => $excercise->getActive()
+                'active' => $excercise->getActive(),
+                'creator' => $excercise->getUser()->getUsername(),
+                'creator_id' => $excercise->getUser()->getUserId()
             ];
         }
 
@@ -94,7 +96,9 @@ class ExercisesController extends AbstractController
                 'description' => $excercise->getDescription(),
                 'category' => $excercise->getCategory()->getName(),
                 'likes' => $likes,
-                'active' => $excercise->getActive()
+                'active' => $excercise->getActive(),
+                'creator' => $excercise->getUser()->getUsername(),
+                'creator_id' => $excercise->getUser()->getUserId()
             ];
         }
 
@@ -143,15 +147,15 @@ class ExercisesController extends AbstractController
         $thisUser = $entityManager->find(Users::class, $idUser);
         $role = $thisUser->getRole()->getName();
 
-        if ($role !== "ROLE_ADMIN") {
-            return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
+        if (!in_array($role, ["ROLE_ADMIN", "ROLE_COACH"])) {
+            return $this->json(['type' => 'error', 'message' => 'You are not an administrator or a coach'], Response::HTTP_BAD_REQUEST);
         }
 
         $data = json_decode($request->getContent(), true);
 
         $name = $this->globalService->validate(trim(strtolower($data['name'] ?? "")));
         $description = $this->globalService->validate(trim(strtolower($data['description'] ?? "")));
-        $category_id = (int)$this->globalService->validate($data['category'] ?? "");
+        $category_id = (int)$this->globalService->validate($data['category_id'] ?? "");
 
         $name_regex = "/^[a-z]{1,30}$/";
         $description_regex = "/^[a-zA-Z0-9]{10,500}$/";
@@ -183,6 +187,7 @@ class ExercisesController extends AbstractController
         $exercise->setDescription($description);
         $exercise->setCategory($category);
         $exercise->setActive(true);
+        $exercise->setUser($thisUser);
 
         $entityManager->persist($exercise);
         $entityManager->flush();
@@ -210,8 +215,8 @@ class ExercisesController extends AbstractController
             $thisUser = $entityManager->find(Users::class, $idUser);
             $role = $thisUser->getRole()->getName();
 
-            if ($role !== "ROLE_ADMIN") {
-                return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
+            if ($role !== "ROLE_ADMIN" || $role !== "ROLE_COACH") {
+                return $this->json(['type' => 'error', 'message' => 'You are not an administrator or a coach'], Response::HTTP_BAD_REQUEST);
             }
 
             $delexercise = $entityManager->find(Exercises::class, $id);
@@ -249,8 +254,8 @@ class ExercisesController extends AbstractController
             $thisUser = $entityManager->find(Users::class, $idUser);
             $role = $thisUser->getRole()->getName();
 
-            if ($role !== "ROLE_ADMIN") {
-                return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
+            if ($role === "ROLE_USER") {
+                return $this->json(['type' => 'error', 'message' => 'You are not an administrator or a coach'], Response::HTTP_BAD_REQUEST);
             }
 
             $exercise = $entityManager->find(Exercises::class, $id);
@@ -286,8 +291,8 @@ class ExercisesController extends AbstractController
         $thisUser = $entityManager->find(Users::class, $idUser);
         $role = $thisUser->getRole()->getName();
 
-        if ($role !== "ROLE_ADMIN") {
-            return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
+        if (!in_array($role, ["ROLE_ADMIN", "ROLE_COACH"])) {
+            return $this->json(['type' => 'error', 'message' => 'You are not an administrator or a coach'], Response::HTTP_BAD_REQUEST);
         }
 
         $excercise = $entityManager->find(Exercises::class, $id);

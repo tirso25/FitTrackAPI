@@ -41,6 +41,10 @@ class Exercises
     #[ORM\OneToOne(mappedBy: 'exercise', targetEntity: ExerciseLikes::class, cascade: ['persist', 'remove'])]
     private ?ExerciseLikes $exerciseLikes = null;
 
+    #[ORM\ManyToOne(targetEntity: Users::class, inversedBy: 'exercises')]
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'user_id', nullable: false)]
+    private ?Users $user = null;
+
     public function __construct()
     {
         $this->favoriteExercises = new ArrayCollection();
@@ -114,6 +118,18 @@ class Exercises
     public function setExerciseLikes($exerciseLikes)
     {
         $this->exerciseLikes = $exerciseLikes;
+
+        return $this;
+    }
+
+    public function getUser(): ?Users
+    {
+        return $this->user;
+    }
+
+    public function setUser(?Users $user): static
+    {
+        $this->user = $user;
 
         return $this;
     }

@@ -63,9 +63,13 @@ class Users
     #[ORM\OneToMany(targetEntity: FavoriteExercises::class, mappedBy: 'user', orphanRemoval: true)]
     private Collection $favoriteExercises;
 
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Exercises::class, orphanRemoval: true)]
+    private Collection $exercises;
+
     public function __construct()
     {
         $this->favoriteExercises = new ArrayCollection();
+        $this->exercises = new ArrayCollection();
     }
 
     public function getUserId(): ?int
@@ -214,5 +218,10 @@ class Users
         $this->profilePicture = $profilePicture;
 
         return $this;
+    }
+
+    public function getExercises(): Collection
+    {
+        return $this->exercises;
     }
 }
