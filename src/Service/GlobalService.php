@@ -12,8 +12,10 @@ class GlobalService
 
     public function validate($data)
     {
+        $data = (string)($data ?? '');
         return htmlspecialchars(stripslashes(trim($data)), ENT_QUOTES, 'UTF-8');
     }
+
 
     public function forceSignOut($entityManager, int $id_user, SessionInterface $session)
     {

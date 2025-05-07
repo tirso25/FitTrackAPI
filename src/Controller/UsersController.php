@@ -29,7 +29,6 @@ class UsersController extends AbstractController
         private GlobalService $globalService,
         private FavoriteExercisesService $favoriteExercisesService,
         private RoleService $roleService,
-        private ImgurService $imgurService,
     ) {}
 
     //!CON JS AL DEVOLVER UN JSON CON EL active SE PUEDE FILTAR EN EL FRONT POR active SIN NECESIDAD DE CREAR UN METODO DE seeAllActiveUsers Y QUITARNIOS EL RECARGAR LA PÁGINA PUDIENDIO HACER UN Switches PARA ALTERNAR ENTRE ACTIVOS O TODOS
@@ -451,12 +450,12 @@ class UsersController extends AbstractController
 
                 $username = $this->globalService->validate(strtolower($data['username'] ?? ""));
                 $password = $this->globalService->validate($data['password']);
-                $roleId = (int)$this->globalService->validate($data['role']) ?? "";
+                $roleId = (int)$this->globalService->validate($data['role_id']) ?? "";
                 $public = array_key_exists('public', $data)
                     ? filter_var($data['public'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
                     : null;
                 $status = $this->globalService->validate($data['status'] ?? null);
-                $description = $this->globalService->validate($data['description'] ?? "");
+                $description = $this->globalService->validate($data['description']) ?? "";
 
                 $password_regex = "/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{5,}$/";
                 $username_regex = "/^[a-z0-9]{5,20}$/";
@@ -485,8 +484,8 @@ class UsersController extends AbstractController
                     $user->setPassword($hashedPassword);
                 }
 
-                if (!empty($description)) {
-                    if (preg_match($description_regex, $description)) {
+                if (!empty($descriptionRaw)) {
+                    if (preg_match($description_regex, $descriptionRaw)) {
                         return $this->json(['type' => 'error', 'message' => 'Invalid description format'], Response::HTTP_BAD_REQUEST);
                     }
                     $user->setDescription($description);
@@ -516,19 +515,6 @@ class UsersController extends AbstractController
                 } else {
                     return $this->json(['type' => 'error', 'message' => 'Invalid status'], Response::HTTP_BAD_REQUEST);
                 }
-
-                // if ($request->files->has('profile_picture')) {
-                //     $file = $request->files->get('profile_picture');
-                //     $imagePath = $file->getPathname();
-
-                //     $imgurResponse = $this->imgurService->uploadImage($imagePath);
-                //     if ($imgurResponse['success']) {
-                //         $profilePictureUrl = $imgurResponse['data']['link'];
-                //         $user->setProfilePicture($profilePictureUrl);
-                //     } else {
-                //         return $this->json(['type' => 'error', 'message' => 'Error uploading profile picture'], Response::HTTP_BAD_REQUEST);
-                //     }
-                // }
 
                 $entityManager->flush();
 

@@ -54,11 +54,8 @@ class Users
     #[ORM\Column(type: Types::INTEGER, nullable: true)]
     private ?int $verification_code = null;
 
-    #[ORM\Column(length: 500, type: Types::STRING)]
+    #[ORM\Column(length: 500, type: Types::STRING, nullable: true)]
     private ?string $description = null;
-
-    #[ORM\Column(type: 'string', length: 255, nullable: true)]
-    private ?string $profilePicture = null;
 
     #[ORM\OneToMany(targetEntity: FavoriteExercises::class, mappedBy: 'user', orphanRemoval: true)]
     private Collection $favoriteExercises;
@@ -202,21 +199,9 @@ class Users
         return $this->description;
     }
 
-    public function setDescription(string $description): static
+    public function setDescription(?string $description): static
     {
         $this->description = $description;
-        return $this;
-    }
-
-    public function getProfilePicture(): ?string
-    {
-        return $this->profilePicture;
-    }
-
-    public function setProfilePicture(?string $profilePicture): self
-    {
-        $this->profilePicture = $profilePicture;
-
         return $this;
     }
 
