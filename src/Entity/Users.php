@@ -57,7 +57,7 @@ class Users
     #[ORM\Column(length: 500, type: Types::STRING, nullable: true)]
     private ?string $description = null;
 
-    #[ORM\OneToMany(targetEntity: FavoriteExercises::class, mappedBy: 'user', orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: FavoritesExercises::class, orphanRemoval: true)]
     private Collection $favoriteExercises;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Exercises::class, orphanRemoval: true)]

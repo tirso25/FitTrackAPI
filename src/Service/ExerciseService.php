@@ -2,8 +2,6 @@
 
 namespace App\Service;
 
-use App\Entity\Exercises;
-
 class ExerciseService
 {
     public function exerciseExisting2(int $id, string $name,  $entityManager)

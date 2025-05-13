@@ -3,10 +3,10 @@
 namespace App\Controller;
 
 use App\Entity\Exercises;
-use App\Entity\FavoriteExercises;
+use App\Entity\FavoritesExercises;
 use App\Entity\Users;
 use App\Service\ExerciseService;
-use App\Service\FavoriteExercisesService;
+use App\Service\FavoritesExercisesService;
 use App\Service\GlobalService;
 use App\Service\UserService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -19,16 +19,16 @@ use Symfony\Component\HttpFoundation\Session\SessionInterface;
 //!VER NUEVOS CAMBIOS CON PUBLIC (perfil publico)
 
 #[Route('/api/favoriteExercises')]
-class FavoriteExercisesController extends AbstractController
+class FavoritesExercisesController extends AbstractController
 {
     public function __construct(
         private UserService $userService,
         private GlobalService $globalService,
-        private FavoriteExercisesService $favoriteExercisesService,
+        private FavoritesExercisesService $favoriteExercisesService,
         private ExerciseService $exerciseService,
     ) {}
 
-    #[Route('/seeFavoriteExercises', name: 'api_seeFavoriteExercises', methods: ['GET'])]
+    #[Route('/seeFavoritesExercises', name: 'api_seeFavoritesExercises', methods: ['GET'])]
     public function seeAllFavouritesExercises(EntityManagerInterface $entityManager, SessionInterface $session): JsonResponse
     {
         $idUser = $session->get('user_id');
@@ -73,13 +73,13 @@ class FavoriteExercisesController extends AbstractController
 
         $thisExercise = $entityManager->find(Exercises::class, $id);
 
-        $existing = $entityManager->getRepository(FavoriteExercises::class)->findOneBy(['user' => $thisUser, 'exercise' => $thisExercise]);
+        $existing = $entityManager->getRepository(FavoritesExercises::class)->findOneBy(['user' => $thisUser, 'exercise' => $thisExercise]);
 
         if ($existing) {
             return $this->json(['type' => 'warning', 'message' => 'Exercise already added to favorite'], Response::HTTP_BAD_REQUEST);
         }
 
-        $newFavourite = new FavoriteExercises();
+        $newFavourite = new FavoritesExercises();
 
         $newFavourite->setUser($thisUser);
         $newFavourite->setExercise($thisExercise);
@@ -106,7 +106,7 @@ class FavoriteExercisesController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
         }
 
-        $favourite =  $entityManager->getRepository(FavoriteExercises::class)->findOneBy(['user' => $idUser, 'exercise' => $id]);
+        $favourite =  $entityManager->getRepository(FavoritesExercises::class)->findOneBy(['user' => $idUser, 'exercise' => $id]);
 
         if (!$favourite) {
             return $this->json(['type' => 'error', 'message' => 'You have not added this exercise to your favorites or this exercise does not exist'], Response::HTTP_BAD_REQUEST);

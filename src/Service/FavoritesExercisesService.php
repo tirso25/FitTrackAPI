@@ -2,13 +2,13 @@
 
 namespace App\Service;
 
-class FavoriteExercisesService
+class FavoritesExercisesService
 {
     public function getFavouriteExercisesByUserId(int $id, $entityManager)
     {
         $query = $entityManager->createQuery(
             'SELECT fe
-            FROM App\Entity\FavoriteExercises fe
+            FROM App\Entity\FavoritesExercises fe
             JOIN fe.user u
             WHERE fe.user = :id_user AND u.public = true'
         )->setParameter('id_user', $id);
@@ -42,7 +42,7 @@ class FavoriteExercisesService
     {
         $query = $entityManager->createQuery(
             'SELECT fe
-            FROM App\Entity\FavoriteExercises fe
+            FROM App\Entity\FavoritesExercises fe
             JOIN fe.user u
             WHERE fe.user = :id_user'
         )->setParameter('id_user', $id);

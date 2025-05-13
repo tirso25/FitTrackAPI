@@ -4,9 +4,8 @@ namespace App\Controller;
 
 use App\Entity\Roles;
 use App\Entity\Users;
-use App\Service\FavoriteExercisesService;
+use App\Service\FavoritesExercisesService;
 use App\Service\GlobalService;
-use App\Service\ImgurService;
 use App\Service\RoleService;
 use App\Service\UserService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -19,15 +18,13 @@ use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Mime\Email;
 
-//!SECURIZAR EN CUANTO A role
-
 #[Route('/api/users')]
 class UsersController extends AbstractController
 {
     public function __construct(
         private UserService $userService,
         private GlobalService $globalService,
-        private FavoriteExercisesService $favoriteExercisesService,
+        private FavoritesExercisesService $favoriteExercisesService,
         private RoleService $roleService,
     ) {}
 
@@ -103,7 +100,7 @@ class UsersController extends AbstractController
 
         $role_user = $thisUser->getRole()->getName();
 
-        if ($role_user === "ROLE_USER" && $idUser !== $id) {
+        if ($role_user !== "ROLE_ADMIN" && $idUser !== $id) {
             $favs = $this->favoriteExercisesService->getFavouriteExercisesByUserId($id, $entityManager);
 
             $data[] = [

@@ -7,25 +7,25 @@ use Doctrine\DBAL\Types\Types;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity]
-#[ORM\Table(name: 'exercise_likes')]
-class ExerciseLikes
+#[ORM\Table(name: 'likes_exercises')]
+class LikesExercises
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: Types::INTEGER)]
-    private ?int $exrlike_id = null;
+    #[ORM\Column(name: 'exerciseLike_id', type: Types::INTEGER)]
+    private ?int $exerciseLike_id = null;
 
     #[ORM\Column(type: Types::INTEGER)]
     #[Assert\NotNull]
     private ?int $likes = null;
 
-    #[ORM\ManyToOne(targetEntity: Exercises::class, inversedBy: 'exercise_likes')]
+    #[ORM\OneToOne(inversedBy: 'likesExercises', targetEntity: Exercises::class)]
     #[ORM\JoinColumn(name: 'exercise_id', referencedColumnName: 'exercise_id', nullable: false)]
     private ?Exercises $exercise = null;
 
     public function getExrlikeId(): ?int
     {
-        return $this->exrlike_id;
+        return $this->exerciseLike_id;
     }
 
     public function getLikes(): ?int

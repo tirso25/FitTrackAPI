@@ -35,11 +35,11 @@ class Exercises
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
     private ?bool $active = null;
 
-    #[ORM\OneToMany(targetEntity: FavoriteExercises::class, mappedBy: 'exercise', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: FavoritesExercises::class, mappedBy: 'exercise', orphanRemoval: true)]
     private Collection $favoriteExercises;
 
-    #[ORM\OneToOne(mappedBy: 'exercise', targetEntity: ExerciseLikes::class, cascade: ['persist', 'remove'])]
-    private ?ExerciseLikes $exerciseLikes = null;
+    #[ORM\OneToOne(mappedBy: 'exercise', targetEntity: LikesExercises::class, cascade: ['persist', 'remove'])]
+    private ?LikesExercises $likesExercises = null;
 
     #[ORM\ManyToOne(targetEntity: Users::class, inversedBy: 'exercises')]
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'user_id', nullable: false)]
@@ -112,12 +112,12 @@ class Exercises
 
     public function getExerciseLikes()
     {
-        return $this->exerciseLikes;
+        return $this->likesExercises;
     }
 
-    public function setExerciseLikes($exerciseLikes)
+    public function setExerciseLikes($likesExercises)
     {
-        $this->exerciseLikes = $exerciseLikes;
+        $this->likesExercises = $likesExercises;
 
         return $this;
     }
