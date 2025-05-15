@@ -85,4 +85,15 @@ class UserService
 
         return ($user->getStatus());
     }
+
+    public function seeAllUsers($entityManager)
+    {
+        $query = $entityManager->createQuery(
+            "SELECT u
+            FROM App\Entity\Users u
+            WHERE u.role != 1"
+        );
+
+        return $query->getResult();
+    }
 }

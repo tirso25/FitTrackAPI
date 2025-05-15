@@ -209,8 +209,19 @@ INSERT INTO roles (name) VALUES
   ('ROLE_USER');
 
 INSERT INTO users (email, username, password, role, status, public) VALUES
-  ('root@gmail.com', 'root', 'r00T123', 1, 'active', 0),
-  ('admin@gmail.com', 'admin', '4AdminT123', 1, 'active', 0);
+  ('root@gmail.com', 'root', 'r00T123+', 1, 'active', 0),
+  ('admin@gmail.com', 'admin', '4dmiN123+', 2, 'active', 0);
+
+INSERT INTO categories (name) VALUES
+  ('CHEST'),
+  ('SHOULDER'),
+  ('TRICEPS'),
+  ('BACK'),
+  ('BICEPS'),
+  ('ABDOMINALS'),
+  ('FEMORAL'),
+  ('QUADRICEPS'),
+  ('CALVES')
 
 -- Triggers para gestión de likes
 CREATE TRIGGER trg_initialize_likes_counter

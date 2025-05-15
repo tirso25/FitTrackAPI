@@ -51,7 +51,7 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
         }
 
-        $users = $entityManager->getRepository(Users::class)->findAll();
+        $users = $this->userService->seeAllUsers($entityManager);
 
         if (!$users) {
             return $this->json(['type' => 'warning', 'message' => 'No users found'], Response::HTTP_OK);
@@ -195,7 +195,7 @@ class UsersController extends AbstractController
             $rememberme = isset($data['rememberme']) ? filter_var($data['rememberme'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : null;
 
             $password_regex = "/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{5,}$/";
-            $username_regex = "/^[a-z0-9]{5,20}$/";
+            $username_regex = "/^[a-z0-9]{4,20}$/";
 
             if ($email === "" || $password === "" || $rememberme === null) {
                 return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
@@ -224,7 +224,6 @@ class UsersController extends AbstractController
             $state_user = $user->getStatus();
             $id_user = $user->getUserId();
 
-            //! https://codepen.io/pen Link para usar el sweetalert, para cuando el usuario no verifica el código
             switch ($state_user) {
                 case "pending":
                     return $this->json(['type' => 'warning', 'message' => 'This user is pending activation'], Response::HTTP_BAD_REQUEST);
@@ -232,16 +231,18 @@ class UsersController extends AbstractController
                     return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
             }
 
-            $query = $entityManager->createQuery(
-                'SELECT u.password FROM App\Entity\Users u WHERE u.email = :email OR u.username = :username'
-            )->setParameters(['email' => $email, 'username' => $email]);
+            if ($user->getRole()->getRoleId() !== 1 && $user->getRole()->getRoleId() !== 2) {
+                $query = $entityManager->createQuery(
+                    'SELECT u.password FROM App\Entity\Users u WHERE u.email = :email OR u.username = :username'
+                )->setParameters(['email' => $email, 'username' => $email]);
 
-            $hashedPassword = $query->getSingleScalarResult();
+                $hashedPassword = $query->getSingleScalarResult();
 
-            $passwordVerify = password_verify($password, $hashedPassword);
+                $passwordVerify = password_verify($password, $hashedPassword);
 
-            if (!$passwordVerify) {
-                return $this->json(['type' => 'error', 'message' => 'User or password doesnt match'], Response::HTTP_BAD_REQUEST);
+                if (!$passwordVerify) {
+                    return $this->json(['type' => 'error', 'message' => 'User or password doesnt match'], Response::HTTP_BAD_REQUEST);
+                }
             }
 
             $session->set('user_id', $id_user);
@@ -322,16 +323,21 @@ class UsersController extends AbstractController
             }
 
             $thisUser = $entityManager->find(Users::class, $idUser);
-            $role = $thisUser->getRole()->getName();
+            $roleThisUser = $thisUser->getRole()->getName();
 
-            if ($role !== "ROLE_ADMIN" && $thisUser->getUserId() != $id) {
+            if ($roleThisUser !== "ROLE_ADMIN" && $roleThisUser !== "ROLE_ROOT" && $thisUser->getUserId() != $id) {
                 return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
             }
 
             $delUser = $entityManager->find(Users::class, $id);
+            $roleDelUser = $delUser->getRole()->getName();
 
             if (!$delUser) {
                 return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
+            }
+
+            if ($roleThisUser !== "ROLE_ROOT" && $roleDelUser === "ROLE_ADMIN") {
+                return $this->json(['type' => 'error', 'message' => 'Only root users can delete administrators'], Response::HTTP_BAD_REQUEST);
             }
 
             $delUser->setStatus('deleted');
@@ -400,6 +406,11 @@ class UsersController extends AbstractController
 
         $user = $entityManager->find(Users::class, $id);
         $thisUser = $entityManager->find(Users::class, $idUser);
+        $roleModifyUser = $user->getRole()->getName();
+
+        if ($roleModifyUser === "ROLE_ROOT") {
+            return $this->json(['type' => 'error', 'message' => 'You cannot modify root users'], Response::HTTP_BAD_REQUEST);
+        }
 
         if (!$user) {
             return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
@@ -411,7 +422,7 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'The user does not match'], Response::HTTP_BAD_REQUEST);
         }
 
-        $roles = $entityManager->getRepository(Roles::class)->findAll();
+        $roles = $this->roleService->seeAllRoles($entityManager);
 
         if (!$roles) {
             return $this->json(['type' => 'warning', 'message' => 'No roles found'], Response::HTTP_OK);
@@ -481,8 +492,8 @@ class UsersController extends AbstractController
                     $user->setPassword($hashedPassword);
                 }
 
-                if (!empty($descriptionRaw)) {
-                    if (preg_match($description_regex, $descriptionRaw)) {
+                if (!empty($description)) {
+                    if (!preg_match($description_regex, $description)) {
                         return $this->json(['type' => 'error', 'message' => 'Invalid description format'], Response::HTTP_BAD_REQUEST);
                     }
                     $user->setDescription($description);
@@ -494,13 +505,16 @@ class UsersController extends AbstractController
                     $user->setPublic($public);
                 }
 
-                if ($role_user === "ROLE_ADMIN") {
-
+                if ($role_user === "ROLE_ADMIN" || $role_user === "ROLE_ROOT") {
                     if (!empty($roleId)) {
                         $role = $this->roleService->roleExisting($roleId, $entityManager);
 
                         if (!$role) {
                             return $this->json(['type' => 'error', 'message' => 'Invalid role'], Response::HTTP_BAD_REQUEST);
+                        }
+
+                        if ($role_user !== "ROLE_ROOT" && $roleModifyUser === "ROLE_ADMIN") {
+                            return $this->json(['type' => 'error', 'message' => 'Only root users can delete administrators'], Response::HTTP_BAD_REQUEST);
                         }
 
                         $user->setRole($role);
@@ -512,7 +526,6 @@ class UsersController extends AbstractController
                 } else {
                     return $this->json(['type' => 'error', 'message' => 'Invalid status'], Response::HTTP_BAD_REQUEST);
                 }
-
                 $entityManager->flush();
 
                 return $this->json(['type' => 'success', 'message' => 'User successfully updated'], Response::HTTP_CREATED);
@@ -544,7 +557,7 @@ class UsersController extends AbstractController
         return $this->json(['ID' =>  $thisUser->getUserId(), 'USERNAME' => $thisUser->getUsername(), 'ROLE' => $thisUser->getRole()->getName()]);
     }
 
-    //!https://codepen.io/pen <- Link para la notificación para poner el email
+    //! CAMBIAR URL BOTON DEL EMAIL PARA IR A VERIFICAR CÓDIGO
     #[Route('/sendEmail', name: 'app_activeUser', methods: ['POST'])]
     public function sendEmail(EntityManagerInterface $entityManager, MailerInterface $mailer, Request $request): JsonResponse
     {
@@ -580,18 +593,43 @@ class UsersController extends AbstractController
             $sendEmail = (new Email())
                 ->from('fittracktfg@gmail.com')
                 ->to($email)
-                ->subject('Bienvenido a FitTrack')
+                ->subject('Welcome to FitTrack')
                 ->html(
-                    '<html>
-                        <body>
-                            <h1>¡Gracias por registrarte en FitTrack!</h1>
-                            <p>Nos alegra que te hayas unido a nuestra comunidad.</p>
-                            <p>Aquí tienes tu codigo de verificación:</p>
-                            <h2>' . $verificationCode . '</h2>
-                            <p>¡Que disfrutes de la app!</p>
-                            <img src="cid:fittrack_logo" alt="Logo de FitTrack" style="width: 250px; height: auto;"/>
-                        </body>
-                    </html>'
+                '<html>
+                    <body style="font-family: Arial, sans-serif; background-color: #f0fff0; margin: 0; padding: 0;">
+                        <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.05);">
+                            <tr>
+                                <td align="center">
+                                    <img src="cid:fittrack_logo" alt="FitTrack logo" style="width: 200px; height: auto; margin-bottom: 20px;" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <h1 style="color: #2e7d32; text-align: center;">Welcome to FitTrack!</h1>
+                                    <p style="color: #333333; font-size: 16px; text-align: center;">
+                                        Thank you for registering with <strong>FitTrack</strong>.<br />
+                                        We are delighted to have you join our community.
+                                    </p>
+                                    <p style="color: #333333; font-size: 16px; text-align: center;">
+                                        Here is your verification code:
+                                    </p>
+                                    <h2 style="color: #4caf50; text-align: center;">' . $verificationCode . '</h2>
+                                    <p style="color: #333333; font-size: 16px; text-align: center;">
+                                        Enjoy the app and reach your goals in a smarter way!
+                                    </p>
+                                    <div style="text-align: center; margin-top: 30px;">
+                                        <a href="https://fittrack.com" style="background-color: #4caf50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                                            Go to FitTrack
+                                        </a>
+                                    </div>
+                                    <p style="text-align: center; color: #999999; font-size: 12px; margin-top: 30px;">
+                                        &copy; ' . date("Y") . ' FitTrack. All rights reserved.
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+                    </body>
+                </html>'
                 )
                 ->embedFromPath('assets/img/FTLogo.png', 'fittrack_logo');
 

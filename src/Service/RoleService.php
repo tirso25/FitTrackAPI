@@ -43,4 +43,15 @@ class RoleService
 
         return $query->getOneOrNullResult() !== null;
     }
+
+    public function seeAllRoles($entityManager)
+    {
+        $query = $entityManager->createQuery(
+            'SELECT r
+            FROM App\Entity\Roles r
+            WHERE r.role_id != 1'
+        );
+
+        return $query->getResult();
+    }
 }
