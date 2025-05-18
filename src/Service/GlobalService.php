@@ -16,7 +16,7 @@ class GlobalService
         return htmlspecialchars(stripslashes(trim($data)), ENT_QUOTES, 'UTF-8');
     }
 
-
+    //!!ELIMINAR EL JWT CON JS DESDE EL FRONT
     public function forceSignOut($entityManager, int $id_user, SessionInterface $session)
     {
         $this->userService->removeToken($entityManager, $id_user);

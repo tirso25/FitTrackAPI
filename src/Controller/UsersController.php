@@ -17,6 +17,7 @@ use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Mime\Email;
+use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 
 #[Route('/api/users')]
 class UsersController extends AbstractController
@@ -63,7 +64,7 @@ class UsersController extends AbstractController
             $data[] = [
                 'id_usr' => $user->getUserId(),
                 'email' => $user->getEmail(),
-                'username' => $user->getUsername(),
+                'username' => $user->getDisplayUsername(),
                 'description' => $user->getDescription(),
                 'role' => $user->getRole()->getName(),
                 'status' => $user->getStatus(),
@@ -105,7 +106,7 @@ class UsersController extends AbstractController
 
             $data[] = [
                 'id_usr' => $user->getUserId(),
-                'username' => $user->getUsername(),
+                'username' => $user->getDisplayUsername(),
                 'description' => $user->getDescription(),
                 'exercisesFavorites' => $favs
             ];
@@ -113,7 +114,7 @@ class UsersController extends AbstractController
             $data[] = [
                 'id_usr' => $user->getUserId(),
                 'email' => $user->getEmail(),
-                'username' => $user->getUsername(),
+                'username' => $user->getDisplayUsername(),
                 'description' => $user->getDescription(),
                 'role' => $user->getRole()->getName(),
                 'status' => $user->getStatus(),
@@ -185,7 +186,7 @@ class UsersController extends AbstractController
     }
 
     #[Route('/singIn', name: 'api_singIn', methods: ['POST'])]
-    public function singIn(EntityManagerInterface $entityManager, Request $request, SessionInterface $session): JsonResponse
+    public function singIn(EntityManagerInterface $entityManager, Request $request, SessionInterface $session, JWTTokenManagerInterface $jwtManager): JsonResponse
     {
         try {
             $data = json_decode($request->getContent(), true);
@@ -245,27 +246,30 @@ class UsersController extends AbstractController
                 }
             }
 
+            $jwtToken = $jwtManager->create($user);
+
             $session->set('user_id', $id_user);
             $idUser = $session->get('user_id');
 
             if ($rememberme === true) {
-                $token = bin2hex(random_bytes(32));
+                $rememberToken  = bin2hex(random_bytes(32));
 
-                $user->setToken($token);
+                $user->setToken($rememberToken);
 
-                setcookie("token", $token, time() + (3600 * 24 * 30));
+                setcookie("rememberToken", $rememberToken, time() + (3600 * 24 * 30), "/", "", true, true);
             } elseif ($rememberme == false) {
                 $this->userService->removeToken($entityManager, $idUser);
             }
 
             $entityManager->flush();
 
-            return $this->json(['type' => 'success', 'message' => 'Session successfully started'], Response::HTTP_OK);
+            return $this->json(['type' => 'success', 'message' => 'Session successfully started', 'token' => $jwtToken], Response::HTTP_OK);
         } catch (\Exception $e) {
             return $this->json(['type' => 'error', 'message' => 'An error occurred while singIn the user'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
+    //!BORRAR EL JWT DEL LOCALSTORAGE 
     #[Route('/singOut', name: 'api_signOut', methods: ['POST'])]
     public function signOut(EntityManagerInterface $entityManager, SessionInterface $session): JsonResponse
     {
@@ -289,7 +293,7 @@ class UsersController extends AbstractController
     }
 
     #[Route('/tokenExisting', name: 'app_tokenExisting', methods: ['POST'])]
-    public function tokenExisting(EntityManagerInterface $entityManager): JsonResponse
+    public function tokenExisting(EntityManagerInterface $entityManager, SessionInterface $session): JsonResponse
     {
         if (isset($_COOKIE['token'])) {
             $token = $_COOKIE['token'];
@@ -297,7 +301,11 @@ class UsersController extends AbstractController
             $user = $entityManager->getRepository(Users::class)->findOneBy(['token' => $token]);
 
             if ($user) {
-                $username = $user->getUsername();
+                $id_user = $user->getUserId();
+
+                $session->set('user_id', $id_user);
+
+                $username = $user->getDisplayUsername();
 
                 return $this->json(['type' => 'success', 'message' => "Welcome back $username!!!"]);
             }
@@ -440,7 +448,7 @@ class UsersController extends AbstractController
         if ($request->isMethod('GET')) {
             $data = [
                 'id_usr' => $user->getUserId(),
-                'username' => $user->getUsername(),
+                'username' => $user->getDisplayUsername(),
                 'description' => $user->getDescription(),
                 'public' => $user->getPublic(),
                 'status' => $user->getStatus(),
@@ -554,10 +562,9 @@ class UsersController extends AbstractController
 
         $thisUser = $entityManager->find(Users::class,  $idUser);
 
-        return $this->json(['ID' =>  $thisUser->getUserId(), 'USERNAME' => $thisUser->getUsername(), 'ROLE' => $thisUser->getRole()->getName()]);
+        return $this->json(['ID' =>  $thisUser->getUserId(), 'USERNAME' => $thisUser->getDisplayUsername(), 'ROLE' => $thisUser->getRole()->getName()]);
     }
 
-    //! CAMBIAR URL BOTON DEL EMAIL PARA IR A VERIFICAR CÓDIGO
     #[Route('/sendEmail', name: 'app_activeUser', methods: ['POST'])]
     public function sendEmail(EntityManagerInterface $entityManager, MailerInterface $mailer, Request $request): JsonResponse
     {

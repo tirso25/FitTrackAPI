@@ -7,13 +7,15 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'users')]
 #[UniqueEntity(fields: ['email'], message: 'There is already an account with this email')]
 #[UniqueEntity(fields: ['username'], message: 'This username is already taken')]
-class Users
+class Users implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -86,7 +88,7 @@ class Users
         return $this;
     }
 
-    public function getUsername(): ?string
+    public function getDisplayUsername(): ?string
     {
         return $this->username;
     }
@@ -208,5 +210,22 @@ class Users
     public function getExercises(): Collection
     {
         return $this->exercises;
+    }
+
+    public function getUserIdentifier(): string
+    {
+        return $this->email ?? '';
+    }
+
+    public function getRoles(): array
+    {
+        return [$this->role?->getName() ?? 'ROLE_USER'];
+    }
+
+    public function eraseCredentials(): void {}
+
+    public function getUsername(): string
+    {
+        return $this->email ?? '';
     }
 }
