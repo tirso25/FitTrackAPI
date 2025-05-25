@@ -142,6 +142,10 @@ class UsersController extends AbstractController
             $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
+        if ($id === 1) {
+            return $this->json(['type' => 'warning', 'message' => 'The user is not available'], Response::HTTP_BAD_REQUEST);
+        }
+
         $user = $entityManager->getRepository(Users::class)->findOneBy(['user_id' => $id]);
 
         if (!$user) {
@@ -150,6 +154,10 @@ class UsersController extends AbstractController
 
         if ($user->getStatus() === "pending") {
             return $this->json(['type' => 'error', 'message' => 'The user is pending activation'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if ($user->getRole() === 1) {
+            return $this->json(['type' => 'warning', 'message' => 'The user is not available'], Response::HTTP_BAD_REQUEST);
         }
 
         $data = [];
@@ -171,7 +179,6 @@ class UsersController extends AbstractController
                 'role' => $user->getRole()->getName(),
                 'status' => $user->getStatus(),
                 'date_union' => $user->getDateUnion(),
-                'exercisesFavorites' => $favs,
             ];
         }
 
@@ -905,6 +912,7 @@ class UsersController extends AbstractController
 
         return $this->json(['type' => 'error', 'message' => 'Method not allowed'], Response::HTTP_METHOD_NOT_ALLOWED);
     }
+
     #[Route('/whoami', name: 'app_whoami', methods: ['GET'])]
     /**
      * @Route("/whoami", name="api_whoami", methods={"GET"})

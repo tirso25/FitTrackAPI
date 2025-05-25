@@ -21,7 +21,7 @@ class GlobalService
     {
         if ($id_user) {
             $this->userService->removeToken($entityManager, $id_user);
+            setcookie("rememberToken", "", time() - 3600,);
         }
-        setcookie("rememberToken", "", time() - 3600,);
     }
 }
