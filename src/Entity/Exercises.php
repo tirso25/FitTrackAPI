@@ -35,6 +35,9 @@ class Exercises
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
     private ?bool $active = null;
 
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['default' => 'CURRENT_TIMESTAMP'])]
+    private \DateTimeInterface $createdAt;
+
     #[ORM\OneToMany(targetEntity: FavoritesExercises::class, mappedBy: 'exercise', orphanRemoval: true)]
     private Collection $favoriteExercises;
 
@@ -97,6 +100,16 @@ class Exercises
     {
         $this->active = $active;
         return $this;
+    }
+
+    public function getCreatedAt(): \DateTimeInterface
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(\DateTimeInterface $createdAt): void
+    {
+        $this->createdAt = $createdAt;
     }
 
     public function getFavoriteExercises()

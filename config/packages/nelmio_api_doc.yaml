@@ -1,0 +1,15 @@
+# config/packages/nelmio_api_doc.yaml
+nelmio_api_doc:
+  documentation:
+    info:
+      title: "FITTRACK API REST"
+      version: "1.0.0"
+    components:
+      securitySchemes:
+        bearerAuth:
+          type: http
+          scheme: bearer
+          bearerFormat: JWT
+  areas:
+    default:
+      path_patterns: [^/api]

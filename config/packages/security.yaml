@@ -31,11 +31,12 @@ security:
             jwt: ~
 
     access_control:
-        - { path: ^/api/users/singIn, roles: PUBLIC_ACCESS }
-        - { path: ^/api/users/singUp, roles: PUBLIC_ACCESS }
-        - { path: ^/api/users/checkCode, roles: PUBLIC_ACCESS }
-        - { path: ^/api/users/sendEmail, roles: PUBLIC_ACCESS }
+        - { path: ^/api/users/signIn, roles: PUBLIC_ACCESS }
+        - { path: ^/api/users/signUp, roles: PUBLIC_ACCESS }
         - { path: ^/api/users/tokenExisting, roles: PUBLIC_ACCESS }
+        - { path: ^/api/users/sendEmail, roles: PUBLIC_ACCESS }
+        - { path: ^/api/users/checkCode, roles: PUBLIC_ACCESS }
+        - { path: ^/api/doc, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:

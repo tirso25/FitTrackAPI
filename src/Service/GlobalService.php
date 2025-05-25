@@ -17,12 +17,11 @@ class GlobalService
     }
 
     //!!ELIMINAR EL JWT CON JS DESDE EL FRONT
-    public function forceSignOut($entityManager, int $id_user, SessionInterface $session)
+    public function forceSignOut($entityManager, int $id_user)
     {
-        $this->userService->removeToken($entityManager, $id_user);
-
-        setcookie("token", "", time() - 3600, "/");
-
-        $session->remove('user_id');
+        if ($id_user) {
+            $this->userService->removeToken($entityManager, $id_user);
+        }
+        setcookie("rememberToken", "", time() - 3600,);
     }
 }

@@ -68,7 +68,8 @@ class ExercisesController extends AbstractController
                 'likes' => $likes,
                 'active' => $excercise->getActive(),
                 'creator' => $excercise->getUser()->getUsername(),
-                'creator_id' => $excercise->getUser()->getUserId()
+                'creator_id' => $excercise->getUser()->getUserId(),
+                'created_at',
             ];
         }
 
