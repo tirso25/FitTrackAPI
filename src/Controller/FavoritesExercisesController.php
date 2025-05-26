@@ -29,21 +29,23 @@ class FavoritesExercisesController extends AbstractController
     ) {}
 
     #[Route('/seeFavoritesExercises', name: 'api_seeFavoritesExercises', methods: ['GET'])]
-    public function seeAllFavouritesExercises(EntityManagerInterface $entityManager, SessionInterface $session): JsonResponse
+    public function seeAllFavouritesExercises(EntityManagerInterface $entityManager): JsonResponse
     {
-        $idUser = $session->get('user_id');
+        /** @var \App\Entity\Users $thisuser */
+        $thisuser = $this->getUser();
+        $thisuserId = $thisuser->getUserId();
+        $thisuserStatus = $thisuser->getStatus();
 
-        if (!$idUser) {
+        if (!$thisuser) {
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if ($this->userService->checkState($entityManager, $idUser) !== "active") {
-            $this->globalService->forceSignOut($entityManager, $idUser, $session);
-
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
+        if ($thisuserStatus !== 'active') {
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+            $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
-        $favourites = $this->favoriteExercisesService->getFavouriteExercises($idUser, $entityManager);
+        $favourites = $this->favoriteExercisesService->getFavouriteExercises($thisuserId, $entityManager);
 
         return $this->json($favourites, Response::HTTP_OK);
     }

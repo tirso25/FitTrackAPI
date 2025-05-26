@@ -3,7 +3,6 @@
 namespace App\Controller;
 
 use App\Entity\Categories;
-use App\Entity\Users;
 use App\Service\CategoryService;
 use App\Service\GlobalService;
 use App\Service\UserService;
@@ -13,7 +12,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 #[Route('/api/categories')]
 class CategoriesController extends AbstractController
@@ -25,24 +23,24 @@ class CategoriesController extends AbstractController
     ) {}
 
     #[Route('/seeAllCategories', name: 'api_seeAllCategories', methods: ['GET'])]
-    public function seeAllCategories(EntityManagerInterface $entityManager, SessionInterface $session): JsonResponse
+    public function seeAllCategories(EntityManagerInterface $entityManager): JsonResponse
     {
-        $idUser = $session->get('user_id');
+        /** @var \App\Entity\Users $thisuser */
+        $thisuser = $this->getUser();
+        $thisuserRole = $thisuser->getRole()->getName();
+        $thisuserId = $thisuser->getUserId();
+        $thisuserStatus = $thisuser->getStatus();
 
-        if (!$idUser) {
+        if (!$thisuser) {
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if ($this->userService->checkState($entityManager, $idUser) !== "active") {
-            $this->globalService->forceSignOut($entityManager, $idUser, $session);
-
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
+        if ($thisuserStatus !== 'active') {
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+            $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
-        $thisUser = $entityManager->find(Users::class, $idUser);
-        $role = $thisUser->getRole()->getName();
-
-        if ($role !== "ROLE_ADMIN") {
+        if ($thisuserRole !== 'ROLE_ADMIN') {
             return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
         }
 
@@ -67,24 +65,24 @@ class CategoriesController extends AbstractController
 
     //!SE CREA POS SI SE QUIERE CONSUMIR COMO API, NO SE USA EN EL FRONT
     #[Route('/seeOneCategory/{id<\d+>}', name: 'seeOneCategory', methods: ['GET'])]
-    public function seeOneCategory(EntityManagerInterface $entityManager, int $id, SessionInterface $session): JsonResponse
+    public function seeOneCategory(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
-        $idUser = $session->get('user_id');
+        /** @var \App\Entity\Users $thisuser */
+        $thisuser = $this->getUser();
+        $thisuserRole = $thisuser->getRole()->getName();
+        $thisuserId = $thisuser->getUserId();
+        $thisuserStatus = $thisuser->getStatus();
 
-        if (!$idUser) {
+        if (!$thisuser) {
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if ($this->userService->checkState($entityManager, $idUser) !== "active") {
-            $this->globalService->forceSignOut($entityManager, $idUser, $session);
-
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
+        if ($thisuserStatus !== 'active') {
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+            $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
-        $thisUser = $entityManager->find(Users::class, $idUser);
-        $role = $thisUser->getRole()->getName();
-
-        if ($role !== "ROLE_ADMIN") {
+        if ($thisuserRole !== 'ROLE_ADMIN') {
             return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
         }
 
@@ -106,25 +104,25 @@ class CategoriesController extends AbstractController
     }
 
     #[Route('/createCategory', name: 'api_createCategory', methods: ['GET'])]
-    public function createCategory(EntityManagerInterface $entityManager, Request $request, SessionInterface $session): JsonResponse
+    public function createCategory(EntityManagerInterface $entityManager, Request $request): JsonResponse
     {
         try {
-            $idUser = $session->get('user_id');
+            /** @var \App\Entity\Users $thisuser */
+            $thisuser = $this->getUser();
+            $thisuserRole = $thisuser->getRole()->getName();
+            $thisuserId = $thisuser->getUserId();
+            $thisuserStatus = $thisuser->getStatus();
 
-            if (!$idUser) {
+            if (!$thisuser) {
                 return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
             }
 
-            if ($this->userService->checkState($entityManager, $idUser) !== "active") {
-                $this->globalService->forceSignOut($entityManager, $idUser, $session);
-
-                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
+            if ($thisuserStatus !== 'active') {
+                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+                $this->globalService->forceSignOut($entityManager, $thisuserId);
             }
 
-            $thisUser = $entityManager->find(Users::class, $idUser);
-            $role = $thisUser->getRole()->getName();
-
-            if ($role !== "ROLE_ADMIN") {
+            if ($thisuserRole !== 'ROLE_ADMIN') {
                 return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
             }
 
@@ -161,25 +159,25 @@ class CategoriesController extends AbstractController
     }
 
     #[Route('/deleteCategory/{id<\d+>}', name: 'api_deleteCategory', methods: ['DELETE'])]
-    public function deleteCategory(EntityManagerInterface $entityManager, int $id, SessionInterface $session): JsonResponse
+    public function deleteCategory(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
         try {
-            $idUser = $session->get('user_id');
+            /** @var \App\Entity\Users $thisuser */
+            $thisuser = $this->getUser();
+            $thisuserRole = $thisuser->getRole()->getName();
+            $thisuserId = $thisuser->getUserId();
+            $thisuserStatus = $thisuser->getStatus();
 
-            if (!$idUser) {
+            if (!$thisuser) {
                 return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
             }
 
-            if ($this->userService->checkState($entityManager, $idUser) !== "active") {
-                $this->globalService->forceSignOut($entityManager, $idUser, $session);
-
-                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
+            if ($thisuserStatus !== 'active') {
+                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+                $this->globalService->forceSignOut($entityManager, $thisuserId);
             }
 
-            $thisUser = $entityManager->find(Users::class, $idUser);
-            $role = $thisUser->getRole()->getName();
-
-            if ($role !== "ROLE_ADMIN") {
+            if ($thisuserRole !== 'ROLE_ADMIN') {
                 return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
             }
 
@@ -199,25 +197,25 @@ class CategoriesController extends AbstractController
     }
 
     #[Route('/activeCategory/{id<\d+>}', name: 'api_activeCategory', methods: ['PUT'])]
-    public function activeCategory(EntityManagerInterface $entityManager, int $id, SessionInterface $session): JsonResponse
+    public function activeCategory(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
         try {
-            $idUser = $session->get('user_id');
+            /** @var \App\Entity\Users $thisuser */
+            $thisuser = $this->getUser();
+            $thisuserRole = $thisuser->getRole()->getName();
+            $thisuserId = $thisuser->getUserId();
+            $thisuserStatus = $thisuser->getStatus();
 
-            if (!$idUser) {
+            if (!$thisuser) {
                 return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
             }
 
-            if ($this->userService->checkState($entityManager, $idUser) !== "active") {
-                $this->globalService->forceSignOut($entityManager, $idUser, $session);
-
-                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
+            if ($thisuserStatus !== 'active') {
+                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+                $this->globalService->forceSignOut($entityManager, $thisuserId);
             }
 
-            $thisUser = $entityManager->find(Users::class, $idUser);
-            $role = $thisUser->getRole()->getName();
-
-            if ($role !== "ROLE_ADMIN") {
+            if ($thisuserRole !== 'ROLE_ADMIN') {
                 return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
             }
 
@@ -237,24 +235,24 @@ class CategoriesController extends AbstractController
     }
 
     #[Route('/modifyCategory/{id<\d+>}', name: 'api_modifyCategory', methods: ['GET', 'PUT'])]
-    public function modifyCategory(EntityManagerInterface $entityManager, Request $request, int $id, SessionInterface $session): JsonResponse
+    public function modifyCategory(EntityManagerInterface $entityManager, Request $request, int $id): JsonResponse
     {
-        $idUser = $session->get('user_id');
+        /** @var \App\Entity\Users $thisuser */
+        $thisuser = $this->getUser();
+        $thisuserRole = $thisuser->getRole()->getName();
+        $thisuserId = $thisuser->getUserId();
+        $thisuserStatus = $thisuser->getStatus();
 
-        if (!$idUser) {
+        if (!$thisuser) {
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if ($this->userService->checkState($entityManager, $idUser) !== "active") {
-            $this->globalService->forceSignOut($entityManager, $idUser, $session);
-
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
+        if ($thisuserStatus !== 'active') {
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+            $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
-        $thisUser = $entityManager->find(Users::class, $idUser);
-        $role = $thisUser->getRole()->getName();
-
-        if ($role !== "ROLE_ADMIN") {
+        if ($thisuserRole !== 'ROLE_ADMIN') {
             return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
         }
 
