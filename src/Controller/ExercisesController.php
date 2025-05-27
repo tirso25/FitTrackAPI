@@ -107,7 +107,7 @@ class ExercisesController extends AbstractController
     }
 
     //!NO HAY NECESIDAD DE CREAR UN ENDPOINT PARA VER UN SOLO EJERCICIO, AL CARGAR LA PÁGINA NOS TRAEMOS TODOS LOS EJERCICIOS, SI QUIERES VER UNO EN ESPECIDICO PARA MODIFICARLO SOLO HAS DE BUSCARLO CON EL ID CON JS EN EL JSON, NOS QUITAMOS TIEMPOS DE CARGA
-    #[Route('/seeOneExcercise/{id<\d+>}', name: 'api_seeOneExcercise', methods: ['GET'])]
+    #[Route('/seeOneExercise/{id<\d+>}', name: 'api_seeOneExercise', methods: ['GET'])]
     public function seeOneExcercise(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
         $excercise = $entityManager->find(Exercises::class, $id);
@@ -339,7 +339,7 @@ class ExercisesController extends AbstractController
 
             $name = $this->globalService->validate(trim(strtolower($data['name'] ?? "")));
             $description = $this->globalService->validate(trim(strtolower($data['description'] ?? "")));
-            $category_id = (int)$this->globalService->validate($data['category'] ?? "");
+            $category_id = (int)$this->globalService->validate($data['category_id'] ?? "");
             $active = array_key_exists('active', $data)
                 ? filter_var($data['active'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
                 : null;

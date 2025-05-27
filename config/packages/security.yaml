@@ -37,6 +37,8 @@ security:
         - { path: ^/api/users/sendEmail, roles: PUBLIC_ACCESS }
         - { path: ^/api/users/checkCode, roles: PUBLIC_ACCESS }
         - { path: ^/api/doc, roles: PUBLIC_ACCESS }
+        - { path: ^/api/exercises/seeAllActiveExercises, roles: PUBLIC_ACCESS }
+        - { path: ^/api/exercises/seeOneExercise/\d+$, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
