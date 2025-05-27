@@ -53,7 +53,9 @@ class UserService
         $usernameDB = $result['username'];
 
         $query = $entityManager->createQuery(
-            'SELECT u FROM App\Entity\Users u WHERE u.username = :username AND u.username != :usernameDB'
+            'SELECT u
+            FROM App\Entity\Users u 
+            WHERE u.username = :username AND u.username != :usernameDB'
         )->setParameters([
             'username' => $username,
             'usernameDB' => $usernameDB

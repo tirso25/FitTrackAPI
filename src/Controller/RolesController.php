@@ -92,7 +92,7 @@ class RolesController extends AbstractController
         $role = $entityManager->find(Roles::class, $id);
 
         if (!$role) {
-            return $this->json(['type' => 'error', 'message' => 'No role found'], Response::HTTP_OK);
+            return $this->json(['type' => 'error', 'message' => 'No role found'], Response::HTTP_BAD_REQUEST);
         }
 
         $roleData = [];
@@ -263,7 +263,7 @@ class RolesController extends AbstractController
         $roles = $entityManager->find(Roles::class, $id);
 
         if (!$roles) {
-            return $this->json(['type' => 'warning', 'message' => 'No role found'], Response::HTTP_OK);
+            return $this->json(['type' => 'warning', 'message' => 'No role found'], Response::HTTP_BAD_REQUEST);
         }
 
         if ($request->isMethod('GET')) {

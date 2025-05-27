@@ -21,7 +21,7 @@ class ExerciseService
         $nameDB = $result['name'];
 
         $query = $entityManager->createQuery(
-            'SELECT e 
+            'SELECT e
             FROM App\Entity\Exercises e 
             WHERE e.name = :name AND e.name != :nameDB'
         )->setParameters([

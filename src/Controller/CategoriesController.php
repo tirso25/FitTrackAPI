@@ -47,7 +47,7 @@ class CategoriesController extends AbstractController
         $categories = $entityManager->getRepository(Categories::class)->findAll();
 
         if (!$categories) {
-            return $this->json(['type' => 'warning', 'message' => 'No categories found'], Response::HTTP_OK);
+            return $this->json(['type' => 'warning', 'message' => 'No categories found'], Response::HTTP_BAD_REQUEST);
         }
 
         $categoriesData = [];
@@ -89,7 +89,7 @@ class CategoriesController extends AbstractController
         $category = $entityManager->find(Categories::class, $id);
 
         if (!$category) {
-            return $this->json(['type' => 'error', 'message' => 'Category not found'], Response::HTTP_OK);
+            return $this->json(['type' => 'error', 'message' => 'Category not found'], Response::HTTP_BAD_REQUEST);
         }
 
         $categoryData = [];
@@ -259,7 +259,7 @@ class CategoriesController extends AbstractController
         $category = $entityManager->find(Categories::class, $id);
 
         if (!$category) {
-            return $this->json(['type' => 'warning', 'message' => 'No category found'], Response::HTTP_OK);
+            return $this->json(['type' => 'warning', 'message' => 'No category found'], Response::HTTP_BAD_REQUEST);
         }
 
         if ($request->isMethod('GET')) {

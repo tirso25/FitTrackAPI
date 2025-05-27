@@ -56,7 +56,7 @@ class UsersController extends AbstractController
         $users = $this->userService->seeAllUsers($entityManager);
 
         if (!$users) {
-            return $this->json(['type' => 'warning', 'message' => 'No users found'], Response::HTTP_OK);
+            return $this->json(['type' => 'warning', 'message' => 'No users found'], Response::HTTP_BAD_REQUEST);
         }
 
         $data = [];
@@ -75,6 +75,7 @@ class UsersController extends AbstractController
 
         return $this->json($data, Response::HTTP_OK);
     }
+
     #[Route('/seeOneUser/{id<\d+>}', name: 'api_seeOneUser', methods: ['GET'])]
     /**
      * @OA\Get(
@@ -184,6 +185,7 @@ class UsersController extends AbstractController
 
         return $this->json($data, Response::HTTP_OK);
     }
+
     #[Route('/signUp', name: 'api_signUp', methods: ['POST'])]
     public function signUp(EntityManagerInterface $entityManager, Request $request): JsonResponse
     {
@@ -243,6 +245,7 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'An error occurred while singUp the user'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
     #[Route('/signIn', name: 'api_signIn', methods: ['POST'])]
     /**
      * @Route("/signIn", name="api_signIn", methods={"POST"})
@@ -475,6 +478,7 @@ class UsersController extends AbstractController
 
         return $this->json(['type' => 'success', 'message' => 'Session successfully ended'], Response::HTTP_OK);
     }
+
     #[Route('/tokenExisting', name: 'app_tokenExisting', methods: ['POST'])]
     /**
      * @OA\Post(
@@ -509,8 +513,9 @@ class UsersController extends AbstractController
                 return $this->json(['type' => 'success', 'message' => "Welcome back $username!!!"]);
             }
         }
-        return $this->json(null, JsonResponse::HTTP_NO_CONTENT);
+        return $this->json(null, JsonResponse::HTTP_BAD_REQUEST);
     }
+
     //!DEPENDIENDO DE LO QUE SE DIGA SE ÙEDE QUITAR PQ YA LO HACE modifyUser
     #[Route('/deleteUser/{id<\d+>}', name: 'api_deleteUser', methods: ['DELETE'])]
     /**
@@ -608,6 +613,7 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'An error occurred while deleting the user'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
     //!DEPENDIENDO DE LO QUE SE DIGA SE ÙEDE QUITAR PQ YA LO HACE modifyUser
     #[Route('/activeUser/{id<\d+>}', name: 'app_activeUser', methods: ['PUT'])]
     /**
@@ -972,6 +978,7 @@ class UsersController extends AbstractController
             'ROLE' => $thisuser->getRole()->getName(),
         ]);
     }
+
     #[Route('/sendEmail', name: 'app_activeUser', methods: ['POST'])]
     /**
      * @OA\Post(
@@ -1114,6 +1121,7 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'An error has occurred with the verification code'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
     #[Route('/checkCode', name: 'api_checkCode', methods: ['POST'])]
     /**
      * @OA\Post(

@@ -51,21 +51,21 @@ class FavoritesExercisesController extends AbstractController
     }
 
     #[Route('/addFavoriteExercise/{id<\d+>}', name: 'api_addFavoriteExercise', methods: ['POST'])]
-    public function addExerciseFavourite(EntityManagerInterface $entityManager, int $id, SessionInterface $session): JsonResponse
+    public function addExerciseFavourite(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
-        $idUser = $session->get('user_id');
+        /** @var \App\Entity\Users $thisuser */
+        $thisuser = $this->getUser();
+        $thisuserId = $thisuser->getUserId();
+        $thisuserStatus = $thisuser->getStatus();
 
-        if (!$idUser) {
+        if (!$thisuser) {
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if ($this->userService->checkState($entityManager, $idUser) !== "active") {
-            $this->globalService->forceSignOut($entityManager, $idUser, $session);
-
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
+        if ($thisuserStatus !== 'active') {
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+            $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
-
-        $thisUser = $entityManager->find(Users::class, $idUser);
 
         $exercise = $this->exerciseService->isActive($id, $entityManager);
 
@@ -75,7 +75,7 @@ class FavoritesExercisesController extends AbstractController
 
         $thisExercise = $entityManager->find(Exercises::class, $id);
 
-        $existing = $entityManager->getRepository(FavoritesExercises::class)->findOneBy(['user' => $thisUser, 'exercise' => $thisExercise]);
+        $existing = $entityManager->getRepository(FavoritesExercises::class)->findOneBy(['user' => $thisuser, 'exercise' => $thisExercise]);
 
         if ($existing) {
             return $this->json(['type' => 'warning', 'message' => 'Exercise already added to favorite'], Response::HTTP_BAD_REQUEST);
@@ -83,7 +83,7 @@ class FavoritesExercisesController extends AbstractController
 
         $newFavourite = new FavoritesExercises();
 
-        $newFavourite->setUser($thisUser);
+        $newFavourite->setUser($thisuser);
         $newFavourite->setExercise($thisExercise);
         $newFavourite->setActive(true);
 
@@ -94,21 +94,23 @@ class FavoritesExercisesController extends AbstractController
     }
 
     #[Route('/undoFavorite/{id<\d+>}', name: 'api_undoFavorite', methods: ['DELETE'])]
-    public function undoFavorite(EntityManagerInterface $entityManager, int $id, SessionInterface $session): JsonResponse
+    public function undoFavorite(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
-        $idUser = $session->get('user_id');
+        /** @var \App\Entity\Users $thisuser */
+        $thisuser = $this->getUser();
+        $thisuserId = $thisuser->getUserId();
+        $thisuserStatus = $thisuser->getStatus();
 
-        if (!$idUser) {
+        if (!$thisuser) {
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if ($this->userService->checkState($entityManager, $idUser) !== "active") {
-            $this->globalService->forceSignOut($entityManager, $idUser, $session);
-
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_BAD_REQUEST);
+        if ($thisuserStatus !== 'active') {
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+            $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
-        $favourite =  $entityManager->getRepository(FavoritesExercises::class)->findOneBy(['user' => $idUser, 'exercise' => $id]);
+        $favourite =  $entityManager->getRepository(FavoritesExercises::class)->findOneBy(['user' => $thisuserId, 'exercise' => $id]);
 
         if (!$favourite) {
             return $this->json(['type' => 'error', 'message' => 'You have not added this exercise to your favorites or this exercise does not exist'], Response::HTTP_BAD_REQUEST);
