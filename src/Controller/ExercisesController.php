@@ -325,7 +325,7 @@ class ExercisesController extends AbstractController
                 'id_exe' => $excercise->getExerciseId(),
                 'name' => $excercise->getName(),
                 'description' => $excercise->getDescription(),
-                'category_id' => $excercise->getCategory()->getName(),
+                'category' => $excercise->getCategory()->getName(),
                 'category_id' => $excercise->getCategory()->getCategoryId(),
                 'categories' => $categoriesData,
                 'active' => $excercise->getActive()

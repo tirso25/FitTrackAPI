@@ -103,7 +103,7 @@ class CategoriesController extends AbstractController
         return $this->json($categoryData, Response::HTTP_OK);
     }
 
-    #[Route('/createCategory', name: 'api_createCategory', methods: ['GET'])]
+    #[Route('/createCategory', name: 'api_createCategory', methods: ['POST'])]
     public function createCategory(EntityManagerInterface $entityManager, Request $request): JsonResponse
     {
         try {
