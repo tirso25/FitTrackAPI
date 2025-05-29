@@ -1118,7 +1118,7 @@ class UsersController extends AbstractController
 
             return $this->json(['type' => 'error', 'message' => 'Email sent successfully'], Response::HTTP_OK);
         } catch (\Exception $e) {
-            return $this->json(['type' => 'error', 'message' => 'An error has occurred with the email'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->json(['type' => 'error', 'message' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
