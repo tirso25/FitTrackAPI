@@ -1070,7 +1070,7 @@ class UsersController extends AbstractController
             $user->setVerificationCode($verificationCode);
 
             $entityManager->flush();
-            dd($email);
+
             $sendEmail = (new Email())
                 ->from('fittracktfg@gmail.com')
                 ->to($email)
