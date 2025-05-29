@@ -98,7 +98,7 @@ RUN echo "APP_ENV=prod" > .env && \
     echo "JWT_PUBLIC_KEY=%kernel.project_dir%/config/jwt/public.pem" >> .env && \
     echo "JWT_PASSPHRASE=${JWT_PASSPHRASE}" >> .env && \
     echo "MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=0" >> .env && \
-    echo "MAILER_DSN=smtp://${GMAIL_USER}:${GMAIL_APP_PASSWORD}@smtp.gmail.com:587" >> .env
+    echo "MAILER_DSN=smtp://${GMAIL_USER}:${GMAIL_APP_PASSWORD}@smtp.gmail.com:465?encryption=ssl&auth_mode=oauth" >> .env
 
 # Generar las claves JWT si no existen.
 # Si las claves privadas y públicas no están presentes en el contenedor, se crean usando OpenSSL.
