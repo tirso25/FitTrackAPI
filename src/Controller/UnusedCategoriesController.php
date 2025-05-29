@@ -14,7 +14,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\Response;
 
 #[Route('/api/categories')]
-class CategoriesController extends AbstractController
+class UnusedCategoriesController extends AbstractController
 {
     public function __construct(
         private UserService $userService,

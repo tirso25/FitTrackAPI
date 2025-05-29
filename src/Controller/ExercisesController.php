@@ -4,7 +4,6 @@ namespace App\Controller;
 
 use App\Entity\Categories;
 use App\Entity\Exercises;
-use App\Entity\Users;
 use App\Service\CategoryService;
 use App\Service\ExerciseService;
 use App\Service\GlobalService;
@@ -57,18 +56,18 @@ class ExercisesController extends AbstractController
 
         $data = [];
 
-        foreach ($exercises as $excercise) {
-            $likes = $excercise->getExerciseLikes()?->getLikes() ?? 0;
+        foreach ($exercises as $exercise) {
+            $likes = $exercise->getExerciseLikes()?->getLikes() ?? 0;
             $data[] = [
-                'id_exe' => $excercise->getExerciseId(),
-                'name' => $excercise->getName(),
-                'description' => $excercise->getDescription(),
-                'category' => $excercise->getCategory()->getName(),
+                'id_exe' => $exercise->getExerciseId(),
+                'name' => $exercise->getName(),
+                'description' => $exercise->getDescription(),
+                'category' => $exercise->getCategory()->getName(),
                 'likes' => $likes,
-                'active' => $excercise->getActive(),
-                'creator' => $excercise->getUser()->getDisplayUsername(),
-                'creator_id' => $excercise->getUser()->getUserId(),
-                'created_at' => $excercise->getCreatedAt()
+                'active' => $exercise->getActive(),
+                'creator' => $exercise->getUser()->getDisplayUsername(),
+                'coach_id' => $exercise->getUser()->getUserId(),
+                'created_at' => $exercise->getCreatedAt()
             ];
         }
 
@@ -88,18 +87,18 @@ class ExercisesController extends AbstractController
 
         $data = [];
 
-        foreach ($exercises as $excercise) {
-            $likes = $excercise->getExerciseLikes()?->getLikes() ?? 0;
+        foreach ($exercises as $exercise) {
+            $likes = $exercise->getExerciseLikes()?->getLikes() ?? 0;
             $data[] = [
-                'id_exe' => $excercise->getExerciseId(),
-                'name' => $excercise->getName(),
-                'description' => $excercise->getDescription(),
-                'category' => $excercise->getCategory()->getName(),
+                'id_exe' => $exercise->getExerciseId(),
+                'name' => $exercise->getName(),
+                'description' => $exercise->getDescription(),
+                'category' => $exercise->getCategory()->getName(),
                 'likes' => $likes,
-                'active' => $excercise->getActive(),
-                'creator' => $excercise->getUser()->getDisplayUsername(),
-                'creator_id' => $excercise->getUser()->getUserId(),
-                'created_at' => $excercise->getCreatedAt()
+                'active' => $exercise->getActive(),
+                'creator' => $exercise->getUser()->getDisplayUsername(),
+                'coach_id' => $exercise->getUser()->getUserId(),
+                'created_at' => $exercise->getCreatedAt()
             ];
         }
 
@@ -110,27 +109,27 @@ class ExercisesController extends AbstractController
     #[Route('/seeOneExercise/{id<\d+>}', name: 'api_seeOneExercise', methods: ['GET'])]
     public function seeOneExcercise(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
-        $excercise = $entityManager->find(Exercises::class, $id);
+        $exercise = $entityManager->find(Exercises::class, $id);
 
-        if (!$excercise) {
-            return $this->json(['type' => 'error', 'message' => 'The excercise does not exist'], Response::HTTP_BAD_REQUEST);
+        if (!$exercise) {
+            return $this->json(['type' => 'error', 'message' => 'The exercise does not exist'], Response::HTTP_BAD_REQUEST);
         }
 
-        if ($excercise->getActive() === false) {
-            return $this->json(['type' => 'error', 'message' => 'The excercise does not exist'], Response::HTTP_BAD_REQUEST);
+        if ($exercise->getActive() === false) {
+            return $this->json(['type' => 'error', 'message' => 'The exercise does not exist'], Response::HTTP_BAD_REQUEST);
         }
 
-        $likes = $excercise->getExerciseLikes()?->getLikes() ?? 0;
+        $likes = $exercise->getExerciseLikes()?->getLikes() ?? 0;
 
         $data[] = [
-            'id_exe' => $excercise->getExerciseId(),
-            'name' => $excercise->getName(),
-            'description' => $excercise->getDescription(),
-            'category' => $excercise->getCategory()->getName(),
+            'id_exe' => $exercise->getExerciseId(),
+            'name' => $exercise->getName(),
+            'description' => $exercise->getDescription(),
+            'category' => $exercise->getCategory()->getName(),
             'likes' => $likes,
-            'creator' => $excercise->getUser()->getDisplayUsername(),
-            'creator_id' => $excercise->getUser()->getUserId(),
-            'created_at' => $excercise->getCreatedAt()
+            'creator' => $exercise->getUser()->getDisplayUsername(),
+            'coach_id' => $exercise->getUser()->getUserId(),
+            'created_at' => $exercise->getCreatedAt()
         ];
 
         return $this->json($data, Response::HTTP_OK);
@@ -154,8 +153,8 @@ class ExercisesController extends AbstractController
             $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
-        if (!in_array($thisuserRole, ["ROLE_ADMIN", "ROLE_COACH"])) {
-            return $this->json(['type' => 'error', 'message' => 'You are not an administrator or a coach'], Response::HTTP_BAD_REQUEST);
+        if ($thisuserRole !== "ROLE_COACH") {
+            return $this->json(['type' => 'error', 'message' => 'You are not an coach'], Response::HTTP_BAD_REQUEST);
         }
 
         $data = json_decode($request->getContent(), true);
@@ -303,10 +302,15 @@ class ExercisesController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not an administrator or a coach'], Response::HTTP_BAD_REQUEST);
         }
 
-        $excercise = $entityManager->find(Exercises::class, $id);
+        $exercise = $entityManager->find(Exercises::class, $id);
 
-        if (!$excercise) {
+        if (!$exercise) {
             return $this->json(['type' => 'error', 'message' => 'The exercise does not exist'], Response::HTTP_BAD_REQUEST);
+        }
+        $exercise_id = $exercise->getExerciseId();
+
+        if ($thisuserId !== $exercise_id && $thisuserRole !== "ROLE_ADMIN") {
+            return $this->json(['type' => 'error', 'message' => 'You are not the owner of this exercise'], Response::HTTP_BAD_REQUEST);
         }
 
         $categories = $entityManager->getRepository(Categories::class)->findAll();
@@ -322,13 +326,15 @@ class ExercisesController extends AbstractController
 
         if ($request->isMethod('GET')) {
             $data = [
-                'id_exe' => $excercise->getExerciseId(),
-                'name' => $excercise->getName(),
-                'description' => $excercise->getDescription(),
-                'category' => $excercise->getCategory()->getName(),
-                'category_id' => $excercise->getCategory()->getCategoryId(),
+                'id_exe' => $exercise->getExerciseId(),
+                'name' => $exercise->getName(),
+                'description' => $exercise->getDescription(),
+                'category' => $exercise->getCategory()->getName(),
+                'category_id' => $exercise->getCategory()->getCategoryId(),
                 'categories' => $categoriesData,
-                'active' => $excercise->getActive()
+                'creator' => $exercise->getUser()->getDisplayUsername(),
+                'coach_id' => $exercise->getUser()->getUserId(),
+                'active' => $exercise->getActive()
             ];
 
             return $this->json($data, Response::HTTP_OK);
@@ -340,6 +346,7 @@ class ExercisesController extends AbstractController
             $name = $this->globalService->validate(trim(strtolower($data['name'] ?? "")));
             $description = $this->globalService->validate(trim(strtolower($data['description'] ?? "")));
             $category_id = (int)$this->globalService->validate($data['category_id'] ?? "");
+            $coach_id = (int)$this->globalService->validate($data['coach_id'] ?? "");
             $active = array_key_exists('active', $data)
                 ? filter_var($data['active'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
                 : null;
@@ -347,7 +354,7 @@ class ExercisesController extends AbstractController
             $name_regex = "/^[a-z0-9]{1,30}$/";
             $description_regex = "/^[a-zA-Z0-9]{10,500}$/";
 
-            if ($name === "" || $description === "" || $category_id === "" || $active === null) {
+            if ($name === "" || $description === "" || $category_id === "" || $active === null || $coach_id === "") {
                 return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
             }
 
@@ -368,11 +375,12 @@ class ExercisesController extends AbstractController
             if (!$category) {
                 return $this->json(['type' => 'error', 'message' => 'Invalid category'], Response::HTTP_BAD_REQUEST);
             }
-            $excercise->setName($name);
-            $excercise->setDescription($description);
-            $excercise->setCategory($category);
+
+            $exercise->setName($name);
+            $exercise->setDescription($description);
+            $exercise->setCategory($category);
             if ($active !== null) {
-                $excercise->setActive($active);
+                $exercise->setActive($active);
             }
 
             $entityManager->flush();

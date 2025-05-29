@@ -1,0 +1,90 @@
+<?php
+
+namespace App\Controller;
+
+use App\Entity\Users;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Routing\Attribute\Route;
+use App\Service\GlobalService;
+use App\Service\UserService;
+use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
+
+#[Route('/api/coachs')]
+class CoachsController extends AbstractController
+{
+    public function __construct(
+        private UserService $userService,
+        private GlobalService $globalService,
+    ) {}
+
+    #[Route('/seeAllCoachs', name: 'api_seeAllCoachs', methods: ['GET'])]
+    public function seeAllCoachs(EntityManagerInterface $entityManager): JsonResponse
+    {
+        /** @var \App\Entity\Users $thisuser */
+        $thisuser = $this->getUser();
+        $thisuserId = $thisuser->getUserId();
+        $thisuserStatus = $thisuser->getStatus();
+
+        if (!$thisuser) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if ($thisuserStatus !== 'active') {
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+            $this->globalService->forceSignOut($entityManager, $thisuserId);
+        }
+
+        $coachs = $this->userService->seeAllCoachs($entityManager);
+
+        if (!$coachs) {
+            return $this->json(['type' => 'warning', 'message' => 'No coachs found'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $data = [];
+
+        foreach ($coachs as $coach) {
+            $data[] = [
+                'id_ch' => $coach->getUserId(),
+                'username' => $coach->getUsername(),
+                'description' => $coach->getDescription(),
+            ];
+        }
+
+        return $this->json($data, Response::HTTP_OK);
+    }
+
+    #[Route('/seeAllExercisesByCoach/{id<\d+>}', name: 'api_seeAllExercisesByCoach', methods: ['GET'])]
+    public function seeAllExercisesByCoach(EntityManagerInterface $entityManager, int $id): JsonResponse
+    {
+        /** @var \App\Entity\Users $thisuser */
+        $thisuser = $this->getUser();
+        $thisuserId = $thisuser->getUserId();
+        $thisuserStatus = $thisuser->getStatus();
+
+        if (!$thisuser) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if ($thisuserStatus !== 'active') {
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+            $this->globalService->forceSignOut($entityManager, $thisuserId);
+        }
+
+        $coach = $entityManager->find(Users::class, $id);
+
+        if (!$coach) {
+            return $this->json(['type' => 'warning', 'message' => 'No coachs found'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if ($coach->getRole()->getName() !== "ROLE_COACH") {
+            return $this->json(['type' => 'warning', 'message' => 'The user is not coach'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if ($coach->getStatus() !== "active") {
+            return $this->json(['type' => 'warning', 'message' => 'The coach is not active'], Response::HTTP_BAD_REQUEST);
+        }
+    }
+}

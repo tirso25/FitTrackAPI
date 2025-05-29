@@ -1046,7 +1046,7 @@ class UsersController extends AbstractController
             $data = json_decode($request->getContent(), true);
 
             $email = $this->globalService->validate(strtolower($data['email'] ?? ""));
-
+            dd($email);
             if ($email === "") {
                 return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
             }
@@ -1118,7 +1118,7 @@ class UsersController extends AbstractController
 
             return $this->json(['type' => 'error', 'message' => 'Email sent successfully'], Response::HTTP_OK);
         } catch (\Exception $e) {
-            return $this->json(['type' => 'error', 'message' => 'An error has occurred with the verification code'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->json(['type' => 'error', 'message' => 'An error has occurred with the email'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
