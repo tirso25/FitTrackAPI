@@ -410,8 +410,10 @@ class UsersController extends AbstractController
 
             $userData = [
                 'this_user_id' => $user->getUserId(),
-                'this_user_emal' =>  $user->getEmail(),
-                'this_user_username' => $user->getDisplayUsername()
+                'this_user_email' =>  $user->getEmail(),
+                'this_user_username' => $user->getDisplayUsername(),
+                'this_user_role_id' => $user->getRole()->getRoleId(),
+                'this_user_role' => $user->getRole()->getName()
             ];
 
             $entityManager->flush();
