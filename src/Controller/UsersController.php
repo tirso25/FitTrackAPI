@@ -19,6 +19,7 @@ use Symfony\Component\Mime\Email;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
 use OpenApi\Annotations as OA;
+use Symfony\Component\HttpFoundation\Cookie;
 
 #[Route('/api/users')]
 class UsersController extends AbstractController
@@ -392,20 +393,29 @@ class UsersController extends AbstractController
                 $payload = [
                     'username' => $user->getUserIdentifier(),
                     'roles' => $user->getRoles(),
-                    'exp' => time() + (3600 * 24 * 30),
+                    'exp' => time() + (3600 * 24 * 30), // 30 días
                 ];
 
                 $jwtToken = $jwtEncoder->encode($payload);
 
                 $rememberToken  = bin2hex(random_bytes(32));
-
                 $user->setToken($rememberToken);
 
-                setcookie("rememberToken", $rememberToken, time() + (3600 * 24 * 30));
-            } elseif ($rememberme == false) {
+                $cookie = new Cookie(
+                    'rememberToken',
+                    $rememberToken,
+                    (new \DateTime())->modify('+30 days'),
+                    '/',
+                    null,
+                    true,
+                    true,
+                    false,
+                    Cookie::SAMESITE_LAX
+                );
+            } else {
                 $jwtToken = $jwtManager->create($user);
-
                 $this->userService->removeToken($entityManager, $id_user);
+                $cookie = null;
             }
 
             $userData = [
@@ -413,12 +423,24 @@ class UsersController extends AbstractController
                 'this_user_email' =>  $user->getEmail(),
                 'this_user_username' => $user->getDisplayUsername(),
                 'this_user_role_id' => $user->getRole()->getRoleId(),
-                'this_user_role' => $user->getRole()->getName()
+                'this_user_role' => $user->getRole()->getName(),
+                'this_user_date_union' => $user->getDateUnion()
             ];
 
             $entityManager->flush();
 
-            return $this->json(['type' => 'success', 'message' => 'Session successfully started', 'token' => $jwtToken, 'userData' => $userData], Response::HTTP_OK);
+            $response = new JsonResponse([
+                'type' => 'success',
+                'message' => 'Session successfully started',
+                'token' => $jwtToken,
+                'userData' => $userData
+            ], Response::HTTP_OK);
+
+            if ($cookie) {
+                $response->headers->setCookie($cookie);
+            }
+
+            return $response;
         } catch (\Exception $e) {
             return $this->json(['type' => 'error', 'message' => 'An error occurred while singIn the user'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
