@@ -93,12 +93,11 @@ RUN mkdir -p var/cache var/log && \
 # - Claves MAILER_DSN necesarias para el envio de correos
 RUN echo "APP_ENV=prod" > .env && \
     echo "APP_DEBUG=false" >> .env && \
-    echo "DATABASE_URL=\${DATABASE_URL}" >> .env && \
+    echo "DATABASE_URL=${DATABASE_URL}" >> .env && \
     echo "JWT_SECRET_KEY=%kernel.project_dir%/config/jwt/private.pem" >> .env && \
     echo "JWT_PUBLIC_KEY=%kernel.project_dir%/config/jwt/public.pem" >> .env && \
-    echo "JWT_PASSPHRASE=\${JWT_PASSPHRASE}" >> .env && \
-    echo "MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=0" >> .env && \
-    echo "MAILER_DSN=\${MAILER_DSN}" >> .env
+    echo "JWT_PASSPHRASE=${JWT_PASSPHRASE}" >> .env && \
+    echo "MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=0" >> .env
 
 # Generar las claves JWT si no existen.
 # Si las claves privadas y públicas no están presentes en el contenedor, se crean usando OpenSSL.
