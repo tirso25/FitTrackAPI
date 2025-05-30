@@ -401,18 +401,7 @@ class UsersController extends AbstractController
 
                 $user->setToken($rememberToken);
 
-                // setcookie("rememberToken", $rememberToken, time() + (3600 * 24 * 30));
-                setcookie(
-                    "rememberToken",
-                    $rememberToken,
-                    [
-                        'expires' => time() + (3600 * 24 * 30),
-                        'path' => '/',
-                        'secure' => true,
-                        'httponly' => false,
-                        'samesite' => 'Lax',
-                    ]
-                );
+                setcookie("rememberToken", $rememberToken, time() + (3600 * 24 * 30));
             } elseif ($rememberme == false) {
                 $jwtToken = $jwtManager->create($user);
 
