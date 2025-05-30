@@ -393,7 +393,7 @@ class UsersController extends AbstractController
                 $payload = [
                     'username' => $user->getUserIdentifier(),
                     'roles' => $user->getRoles(),
-                    'exp' => time() + (3600 * 24 * 30), // 30 días
+                    'exp' => time() + (3600 * 24 * 30),
                 ];
 
                 $jwtToken = $jwtEncoder->encode($payload);
@@ -407,8 +407,8 @@ class UsersController extends AbstractController
                     (new \DateTime())->modify('+30 days'),
                     '/',
                     null,
-                    true,
-                    true,
+                    false,
+                    false,
                     false,
                     Cookie::SAMESITE_LAX
                 );
