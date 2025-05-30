@@ -13,6 +13,7 @@ class UserService
 
         $user->setToken(null);
 
+        $entityManager->persist($user);
         $entityManager->flush();
     }
 

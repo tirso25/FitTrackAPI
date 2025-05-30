@@ -19,7 +19,6 @@ use Symfony\Component\Mime\Email;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
 use OpenApi\Annotations as OA;
-use Symfony\Component\HttpFoundation\Cookie;
 
 #[Route('/api/users')]
 class UsersController extends AbstractController
@@ -389,6 +388,8 @@ class UsersController extends AbstractController
                 }
             }
 
+            $rememberToken = null;
+
             if ($rememberme === true) {
                 $payload = [
                     'username' => $user->getUserIdentifier(),
@@ -398,24 +399,38 @@ class UsersController extends AbstractController
 
                 $jwtToken = $jwtEncoder->encode($payload);
 
-                $rememberToken  = bin2hex(random_bytes(32));
-                $user->setToken($rememberToken);
+                $rememberToken = bin2hex(random_bytes(32));
 
-                $cookie = new Cookie(
-                    'rememberToken',
+                $cookieExpire = time() + (3600 * 24 * 30);
+                setcookie(
+                    "rememberToken",
                     $rememberToken,
-                    (new \DateTime())->modify('+30 days'),
-                    '/',
-                    null,
-                    false,
-                    false,
-                    false,
-                    Cookie::SAMESITE_LAX
+                    [
+                        'expires' => $cookieExpire,
+                        'path' => '/',
+                        'secure' => false,
+                        'httponly' => false,
+                        'samesite' => 'Strict'
+                    ]
                 );
-            } else {
+
+                $user->setToken($_COOKIE['rememberToken']);
+            } elseif ($rememberme == false) {
                 $jwtToken = $jwtManager->create($user);
+
                 $this->userService->removeToken($entityManager, $id_user);
-                $cookie = null;
+
+                if (isset($_COOKIE['rememberToken'])) {
+                    setcookie("rememberToken", "", [
+                        'expires' => time() - 3600,
+                        'path' => '/',
+                        'secure' => false,
+                        'httponly' => false,
+                        'samesite' => 'Strict'
+                    ]);
+
+                    unset($_COOKIE['rememberToken']);
+                }
             }
 
             $userData = [
@@ -427,20 +442,21 @@ class UsersController extends AbstractController
                 'this_user_date_union' => $user->getDateUnion()
             ];
 
+            $entityManager->persist($user);
             $entityManager->flush();
 
-            $response = new JsonResponse([
+            $response = [
                 'type' => 'success',
                 'message' => 'Session successfully started',
                 'token' => $jwtToken,
                 'userData' => $userData
-            ], Response::HTTP_OK);
+            ];
 
-            if ($cookie) {
-                $response->headers->setCookie($cookie);
+            if ($rememberme === true && $rememberToken) {
+                $response['rememberToken'] = $rememberToken;
             }
 
-            return $response;
+            return $this->json($response, Response::HTTP_OK);
         } catch (\Exception $e) {
             return $this->json(['type' => 'error', 'message' => 'An error occurred while singIn the user'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
@@ -531,20 +547,64 @@ class UsersController extends AbstractController
      *     )
      * )
      */
-    public function tokenExisting(EntityManagerInterface $entityManager): JsonResponse
+    public function tokenExisting(EntityManagerInterface $entityManager, Request $request): JsonResponse
     {
-        if (isset($_COOKIE['rememberToken'])) {
-            $token = $_COOKIE['rememberToken'];
+        try {
+            $token = $request->cookies->get('rememberToken');
+
+            if (!$token) {
+                return $this->json([
+                    'type' => 'info',
+                    'message' => 'No remember token found'
+                ], Response::HTTP_BAD_REQUEST);
+            }
 
             $user = $entityManager->getRepository(Users::class)->findOneBy(['token' => $token]);
 
-            if ($user) {
-                $username = $user->getDisplayUsername();
+            if (!$user) {
 
-                return $this->json(['type' => 'success', 'message' => "Welcome back $username!!!"]);
+                setcookie("rememberToken", "", [
+                    'expires' => time() - 3600,
+                    'path' => '/',
+                    'secure' => false,
+                    'httponly' => false,
+                    'samesite' => 'Strict'
+                ]);
+
+                return $this->json([
+                    'type' => 'error',
+                    'message' => 'Invalid or expired token'
+                ], Response::HTTP_UNAUTHORIZED);
             }
+
+            if ($user->getStatus() !== 'active') {
+                return $this->json([
+                    'type' => 'error',
+                    'message' => 'Account not active'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            $username = $user->getDisplayUsername();
+
+            return $this->json([
+                'type' => 'success',
+                'message' => "Welcome back $username!!!",
+                'userData' => [
+                    'this_user_id' => $user->getUserId(),
+                    'this_user_email' => $user->getEmail(),
+                    'this_user_username' => $user->getDisplayUsername(),
+                    'this_user_role_id' => $user->getRole()->getRoleId(),
+                    'this_user_role' => $user->getRole()->getName(),
+                    'this_user_date_union' => $user->getDateUnion()
+                ]
+            ]);
+        } catch (\Exception $e) {
+            error_log("TokenExisting error: " . $e->getMessage());
+            return $this->json([
+                'type' => 'error',
+                'message' => 'Error checking token'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-        return $this->json(null, JsonResponse::HTTP_BAD_REQUEST);
     }
 
     //!DEPENDIENDO DE LO QUE SE DIGA SE ÙEDE QUITAR PQ YA LO HACE modifyUser
