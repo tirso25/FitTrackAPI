@@ -401,7 +401,18 @@ class UsersController extends AbstractController
 
                 $user->setToken($rememberToken);
 
-                setcookie("rememberToken", $rememberToken, time() + (3600 * 24 * 30));
+                // setcookie("rememberToken", $rememberToken, time() + (3600 * 24 * 30));
+                setcookie(
+                    "rememberToken",
+                    $rememberToken,
+                    [
+                        'expires' => time() + (3600 * 24 * 30),
+                        'path' => '/',
+                        'secure' => true,
+                        'httponly' => false,
+                        'samesite' => 'Lax',
+                    ]
+                );
             } elseif ($rememberme == false) {
                 $jwtToken = $jwtManager->create($user);
 
@@ -423,6 +434,7 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'An error occurred while singIn the user'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
     //!BORRAR EL JWT DEL LOCALSTORAGE 
     #[Route('/signOut', name: 'api_signOut', methods: ['POST'])]
     /**
