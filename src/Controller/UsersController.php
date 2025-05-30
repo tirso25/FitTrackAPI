@@ -408,9 +408,15 @@ class UsersController extends AbstractController
                 $this->userService->removeToken($entityManager, $id_user);
             }
 
+            $userData = [
+                'this_user_id' => $user->getUserId(),
+                'this_user_emai' =>  $user->getEmail(),
+                'this_user_username' => $user->getDisplayUsername()
+            ];
+
             $entityManager->flush();
 
-            return $this->json(['type' => 'success', 'message' => 'Session successfully started', 'token' => $jwtToken], Response::HTTP_OK);
+            return $this->json(['type' => 'success', 'message' => 'Session successfully started', 'token' => $jwtToken, 'userData' => $userData], Response::HTTP_OK);
         } catch (\Exception $e) {
             return $this->json(['type' => 'error', 'message' => 'An error occurred while singIn the user'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
