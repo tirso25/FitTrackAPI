@@ -410,7 +410,7 @@ class UsersController extends AbstractController
 
             $userData = [
                 'this_user_id' => $user->getUserId(),
-                'this_user_emai' =>  $user->getEmail(),
+                'this_user_emal' =>  $user->getEmail(),
                 'this_user_username' => $user->getDisplayUsername()
             ];
 
