@@ -4,9 +4,6 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
-    # Rutas por defecto para desarrollo local
-    jwt_secret_key_path: '%kernel.project_dir%/config/jwt/private.pem'
-    jwt_public_key_path: '%kernel.project_dir%/config/jwt/public.pem'
 
 services:
     # default configuration for services in *this* file

@@ -85,19 +85,30 @@ RUN mkdir -p var/cache var/log && \
     chown -R symfony:symfony var && \
     chmod -R 777 var
 
-# CAMBIO PRINCIPAL: Generar el archivo .env usando las variables de entorno de Render
-# En lugar de usar rutas de archivos, ahora usa directamente el contenido de las claves
+# Generar el archivo .env con configuraciones específicas para la producción.
+# Esto incluye:
+# - Configuración del entorno (APP_ENV)
+# - URL de la base de datos (DATABASE_URL)
+# - Claves JWT necesarias para la autenticación
+# - Claves MAILER_DSN necesarias para el envio de correos
 RUN echo "APP_ENV=prod" > .env && \
     echo "APP_DEBUG=false" >> .env && \
     echo "DATABASE_URL=${DATABASE_URL}" >> .env && \
-    echo "JWT_SECRET_KEY=${JWT_SECRET_KEY}" >> .env && \
-    echo "JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY}" >> .env && \
+    echo "JWT_SECRET_KEY=%kernel.project_dir%/config/jwt/private.pem" >> .env && \
+    echo "JWT_PUBLIC_KEY=%kernel.project_dir%/config/jwt/public.pem" >> .env && \
     echo "JWT_PASSPHRASE=${JWT_PASSPHRASE}" >> .env && \
     echo "MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=0" >> .env && \
     echo "MAILER_DSN=${MAILER_DSN}" >> .env
 
-# ELIMINAMOS la sección de generación de claves JWT ya que ahora usamos las variables de entorno directamente
-# Las claves vienen desde las variables de entorno de Render, no necesitamos generarlas
+# Generar las claves JWT si no existen.
+# Si las claves privadas y públicas no están presentes en el contenedor, se crean usando OpenSSL.
+RUN mkdir -p config/jwt && \
+    if [ ! -f config/jwt/private.pem ]; then \
+    apk add --no-cache openssl && \
+    openssl genpkey -out config/jwt/private.pem -aes256 -algorithm rsa -pkeyopt rsa_keygen_bits:4096 -pass pass:${JWT_PASSPHRASE} && \
+    openssl pkey -in config/jwt/private.pem -out config/jwt/public.pem -pubout -passin pass:${JWT_PASSPHRASE}; \
+    fi && \
+    chown -R symfony:symfony config/jwt
 
 # Cambiar al usuario "symfony" para que la aplicación se ejecute con privilegios limitados.
 USER symfony
