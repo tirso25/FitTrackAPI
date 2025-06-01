@@ -27,16 +27,15 @@ class CoachService
         return $query->getResult();
     }
 
-    public function seeAllExercisesByCoach($entityManager, $coach_id)
+    public function seeAllExercisesByCoach($entityManager, int $coach_id)
     {
         $query = $entityManager->createQuery(
-            "SELECT u
-            FROM App\Entity\Users u
-            WHERE user_id = :coach_id"
-        )
-            ->setParameters([
-                'coach_id' => $coach_id,
-            ]);
+            "SELECT e
+             FROM App\Entity\Exercises e
+             WHERE e.user.userId = :coach_id
+             AND e.active = 1"
+        )->setParameter('coach_id', $coach_id);
+
         return $query->getResult();
     }
 }

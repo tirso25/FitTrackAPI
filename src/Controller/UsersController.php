@@ -458,7 +458,10 @@ class UsersController extends AbstractController
 
             return $this->json($response, Response::HTTP_OK);
         } catch (\Exception $e) {
-            return $this->json(['type' => 'error', 'message' => 'An error occurred while singIn the user'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->json([
+                'type' => 'error',
+                'message' => 'Error interno al hacer signIn: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
