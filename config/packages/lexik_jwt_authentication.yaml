@@ -1,8 +1,9 @@
+
 # config/packages/lexik_jwt_authentication.yaml
 lexik_jwt_authentication:
-    # Usamos key_path para archivos en desarrollo local
-    # y secret_key/public_key para contenido directo en producción
-    secret_key: '%env(default:jwt_secret_key_path:JWT_SECRET_KEY)%'
-    public_key: '%env(default:jwt_public_key_path:JWT_PUBLIC_KEY)%'
+    # En producción usará el contenido directo de las variables de entorno
+    # En desarrollo local necesitarás sobrescribir esto en .env.local
+    secret_key: '%env(JWT_SECRET_KEY)%'
+    public_key: '%env(JWT_PUBLIC_KEY)%'
     pass_phrase: '%env(JWT_PASSPHRASE)%'
     token_ttl: 3600
