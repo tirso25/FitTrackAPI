@@ -2,12 +2,11 @@
 
 namespace App\Controller;
 
-use App\Entity\Users;
+use App\Service\CoachService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Service\GlobalService;
 use App\Service\UserService;
-use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,6 +15,7 @@ use Symfony\Component\HttpFoundation\Response;
 class CoachsController extends AbstractController
 {
     public function __construct(
+        private CoachService $coachService,
         private UserService $userService,
         private GlobalService $globalService,
     ) {}
@@ -37,7 +37,7 @@ class CoachsController extends AbstractController
             $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
-        $coachs = $this->userService->seeAllCoachs($entityManager);
+        $coachs = $this->coachService->seeAllCoachs($entityManager);
 
         if (!$coachs) {
             return $this->json(['type' => 'warning', 'message' => 'No coachs found'], Response::HTTP_BAD_REQUEST);
@@ -56,35 +56,35 @@ class CoachsController extends AbstractController
         return $this->json($data, Response::HTTP_OK);
     }
 
-    #[Route('/seeAllExercisesByCoach/{id<\d+>}', name: 'api_seeAllExercisesByCoach', methods: ['GET'])]
-    public function seeAllExercisesByCoach(EntityManagerInterface $entityManager, int $id): JsonResponse
-    {
-        /** @var \App\Entity\Users $thisuser */
-        $thisuser = $this->getUser();
-        $thisuserId = $thisuser->getUserId();
-        $thisuserStatus = $thisuser->getStatus();
+    // #[Route('/seeAllExercisesByCoach/{id<\d+>}', name: 'api_seeAllExercisesByCoach', methods: ['GET'])]
+    // public function seeAllExercisesByCoach(EntityManagerInterface $entityManager, int $id): JsonResponse
+    // {
+    //     /** @var \App\Entity\Users $thisuser */
+    //     $thisuser = $this->getUser();
+    //     $thisuserId = $thisuser->getUserId();
+    //     $thisuserStatus = $thisuser->getStatus();
 
-        if (!$thisuser) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
-        }
+    //     if (!$thisuser) {
+    //         return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+    //     }
 
-        if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
-            $this->globalService->forceSignOut($entityManager, $thisuserId);
-        }
+    //     if ($thisuserStatus !== 'active') {
+    //         return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+    //         $this->globalService->forceSignOut($entityManager, $thisuserId);
+    //     }
 
-        $coach = $entityManager->find(Users::class, $id);
+    //     $coach = $entityManager->find(Users::class, $id);
 
-        if (!$coach) {
-            return $this->json(['type' => 'warning', 'message' => 'No coachs found'], Response::HTTP_BAD_REQUEST);
-        }
+    //     if (!$coach) {
+    //         return $this->json(['type' => 'warning', 'message' => 'No coachs found'], Response::HTTP_BAD_REQUEST);
+    //     }
 
-        if ($coach->getRole()->getName() !== "ROLE_COACH") {
-            return $this->json(['type' => 'warning', 'message' => 'The user is not coach'], Response::HTTP_BAD_REQUEST);
-        }
+    //     if ($coach->getRole()->getName() !== "ROLE_COACH") {
+    //         return $this->json(['type' => 'warning', 'message' => 'The user is not coach'], Response::HTTP_BAD_REQUEST);
+    //     }
 
-        if ($coach->getStatus() !== "active") {
-            return $this->json(['type' => 'warning', 'message' => 'The coach is not active'], Response::HTTP_BAD_REQUEST);
-        }
-    }
+    //     if ($coach->getStatus() !== "active") {
+    //         return $this->json(['type' => 'warning', 'message' => 'The coach is not active'], Response::HTTP_BAD_REQUEST);
+    //     }
+    // }
 }

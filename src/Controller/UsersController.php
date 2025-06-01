@@ -826,6 +826,7 @@ class UsersController extends AbstractController
         $thisuser = $this->getUser();
         $thisuserId = $thisuser->getUserId();
         $thisuserRole = $thisuser->getRole()->getName();
+        $thisuserRoleId = $thisuser->getRole()->getRoleId();
         $thisuserStatus = $thisuser->getStatus();
 
         if (!$thisuser) {
@@ -842,6 +843,14 @@ class UsersController extends AbstractController
 
         if ($roleModifyUser === "ROLE_ROOT") {
             return $this->json(['type' => 'error', 'message' => 'You cannot modify root users'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if ($thisuserRole !== "ROLE_ROOT" && $roleModifyUser === "ROLE_ADMIN" && $thisuserId !== $id) {
+            return $this->json(['type' => 'error', 'message' => 'Only root users can modify administrators'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if ($thisuserRole !== "ROLE_ADMIN" && $roleModifyUser === "ROLE_COACH" && $thisuserId !== $id) {
+            return $this->json(['type' => 'error', 'message' => 'Only administrators users can modify coachs'], Response::HTTP_BAD_REQUEST);
         }
 
         if (!$user) {
@@ -978,6 +987,14 @@ class UsersController extends AbstractController
                     $user->setPublic($public);
                 }
 
+                if ($thisuserRole !== "ROLE_ROOT" && $roleModifyUser === "ROLE_ADMIN" && $thisuserId !== $id) {
+                    return $this->json(['type' => 'error', 'message' => 'Only root users can modify administrators'], Response::HTTP_BAD_REQUEST);
+                }
+
+                if ($thisuserRole !== "ROLE_ADMIN" && $roleModifyUser === "ROLE_COACH" && $thisuserId !== $id) {
+                    return $this->json(['type' => 'error', 'message' => 'Only administrators users can modify coachs'], Response::HTTP_BAD_REQUEST);
+                }
+
                 if ($thisuserRole === "ROLE_ADMIN" || $thisuserRole === "ROLE_ROOT") {
                     if (!empty($roleId)) {
                         $role = $this->roleService->roleExisting($roleId, $entityManager);
@@ -986,8 +1003,8 @@ class UsersController extends AbstractController
                             return $this->json(['type' => 'error', 'message' => 'Invalid role'], Response::HTTP_BAD_REQUEST);
                         }
 
-                        if ($thisuserRole !== "ROLE_ROOT" && $roleModifyUser === "ROLE_ADMIN") {
-                            return $this->json(['type' => 'error', 'message' => 'Only root users can delete administrators'], Response::HTTP_BAD_REQUEST);
+                        if ($thisuserRole !== "ROLE_ROOT" && $roleModifyUser === "ROLE_ADMIN" && $thisuserRoleId !== $roleId) {
+                            return $this->json(['type' => 'error', 'message' => 'Only root users can modify the role of administrators.'], Response::HTTP_BAD_REQUEST);
                         }
 
                         $user->setRole($role);
@@ -999,6 +1016,7 @@ class UsersController extends AbstractController
                 } else {
                     return $this->json(['type' => 'error', 'message' => 'Invalid status'], Response::HTTP_BAD_REQUEST);
                 }
+
                 $entityManager->flush();
 
                 return $this->json(['type' => 'success', 'message' => 'User successfully updated'], Response::HTTP_CREATED);
