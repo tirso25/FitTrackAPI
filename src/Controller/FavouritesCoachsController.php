@@ -2,32 +2,28 @@
 
 namespace App\Controller;
 
-use App\Entity\Exercises;
-use App\Entity\FavoritesExercises;
-use App\Service\ExerciseService;
-use App\Service\FavoritesExercisesService;
+use App\Entity\FavoritesCoachs;
+use App\Entity\Users;
+use App\Service\CoachService;
+use App\Service\FavouritesCoachsService;
 use App\Service\GlobalService;
-use App\Service\UserService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\Response;
 
-//!VER NUEVOS CAMBIOS CON PUBLIC (perfil publico)
-
-#[Route('/api/favoriteExercises')]
-class FavoritesExercisesController extends AbstractController
+#[Route('/api/favoriteCoachs')]
+class FavouritesCoachsController extends AbstractController
 {
     public function __construct(
-        private UserService $userService,
+        private CoachService $coachService,
         private GlobalService $globalService,
-        private FavoritesExercisesService $favoriteExercisesService,
-        private ExerciseService $exerciseService,
+        private FavouritesCoachsService $favouritesCoachsService
     ) {}
 
-    #[Route('/seeFavoritesExercises', name: 'api_seeFavoritesExercises', methods: ['GET'])]
-    public function seeAllFavouritesExercises(EntityManagerInterface $entityManager): JsonResponse
+    #[Route('/seeFavoritesCoachs', name: 'api_seeFavoritesCoachs', methods: ['GET'])]
+    public function seeFavoritesCoachs(EntityManagerInterface $entityManager): JsonResponse
     {
         /** @var \App\Entity\Users $thisuser */
         $thisuser = $this->getUser();
@@ -43,13 +39,13 @@ class FavoritesExercisesController extends AbstractController
             $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
-        $favourites = $this->favoriteExercisesService->getFavouriteExercises($thisuserId, $entityManager);
+        $favourites = $this->favouritesCoachsService->getFavouriteCoachs($thisuserId, $entityManager);
 
         return $this->json($favourites, Response::HTTP_OK);
     }
 
-    #[Route('/addFavoriteExercise/{id<\d+>}', name: 'api_addFavoriteExercise', methods: ['POST'])]
-    public function addExerciseFavourite(EntityManagerInterface $entityManager, int $id): JsonResponse
+    #[Route('/addFavoritesCoachs/{id<\d+>}', name: 'addFavoritesCoachs', methods: ['POST'])]
+    public function addFavoritesCoachs(EntityManagerInterface $entityManager, int $id)
     {
         /** @var \App\Entity\Users $thisuser */
         $thisuser = $this->getUser();
@@ -65,34 +61,34 @@ class FavoritesExercisesController extends AbstractController
             $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
-        $exercise = $this->exerciseService->isActive($id, $entityManager);
+        $coach = $this->coachService->isActive($entityManager, $id);
 
-        if (!$exercise) {
-            return $this->json(['type' => 'error', 'message' => 'The exercise does not exist'], Response::HTTP_BAD_REQUEST);
+        if (!$coach) {
+            return $this->json(['type' => 'error', 'message' => 'The coach is not active'], Response::HTTP_BAD_REQUEST);
         }
 
-        $thisExercise = $entityManager->find(Exercises::class, $id);
+        $thisCoach = $entityManager->find(Users::class, $id);
 
-        $existing = $entityManager->getRepository(FavoritesExercises::class)->findOneBy(['user' => $thisuser, 'exercise' => $thisExercise]);
+        $existing = $entityManager->getRepository(FavoritesCoachs::class)->findOneBy(['user' => $thisuser, 'coach' => $thisCoach]);
 
         if ($existing) {
-            return $this->json(['type' => 'warning', 'message' => 'Exercise already added to favorite'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'warning', 'message' => 'Coach already added to favorite'], Response::HTTP_BAD_REQUEST);
         }
 
-        $newFavourite = new FavoritesExercises();
+        $newFavourite = new FavoritesCoachs();
 
         $newFavourite->setUser($thisuser);
-        $newFavourite->setExercise($thisExercise);
+        $newFavourite->setCoach($thisCoach);
         $newFavourite->setActive(true);
 
         $entityManager->persist($newFavourite);
         $entityManager->flush();
 
-        return $this->json(['type' => 'success', 'message' => 'Exercise added to favorite correctly'], Response::HTTP_OK);
+        return $this->json(['type' => 'success', 'message' => 'Coach added to favorite correctly'], Response::HTTP_OK);
     }
 
-    #[Route('/undoFavorite/{id<\d+>}', name: 'api_undoFavorite', methods: ['DELETE'])]
-    public function undoFavorite(EntityManagerInterface $entityManager, int $id): JsonResponse
+    #[Route('/undoFavoritesCoachs/{id<\d+>}', name: 'undoFavoritesCoachs', methods: ['DELETE'])]
+    public function undoFavoritesCoachs(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
         /** @var \App\Entity\Users $thisuser */
         $thisuser = $this->getUser();
@@ -108,15 +104,17 @@ class FavoritesExercisesController extends AbstractController
             $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
-        $favourite =  $entityManager->getRepository(FavoritesExercises::class)->findOneBy(['user' => $thisuserId, 'exercise' => $id]);
+        $thisCoach = $entityManager->find(Users::class, $id);
+
+        $favourite = $entityManager->getRepository(FavoritesCoachs::class)->findOneBy(['user' => $thisuser, 'coach' => $thisCoach]);
 
         if (!$favourite) {
-            return $this->json(['type' => 'error', 'message' => 'You have not added this exercise to your favorites or this exercise does not exist'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'You have not added this coach to your favorites or this coach does not exist'], Response::HTTP_BAD_REQUEST);
         }
 
         $entityManager->remove($favourite);
         $entityManager->flush();
 
-        return $this->json(['type' => 'success', 'message' => 'Exercise successfully removed from favorites'], Response::HTTP_OK);
+        return $this->json(['type' => 'success', 'message' => 'Coach successfully removed from favorites'], Response::HTTP_OK);
     }
 }

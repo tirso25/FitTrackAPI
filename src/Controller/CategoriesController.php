@@ -14,7 +14,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\Response;
 
 #[Route('/api/categories')]
-class UnusedCategoriesController extends AbstractController
+class CategoriesController extends AbstractController
 {
     public function __construct(
         private UserService $userService,
@@ -36,7 +36,7 @@ class UnusedCategoriesController extends AbstractController
         }
 
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
@@ -78,7 +78,7 @@ class UnusedCategoriesController extends AbstractController
         }
 
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
@@ -118,7 +118,7 @@ class UnusedCategoriesController extends AbstractController
             }
 
             if ($thisuserStatus !== 'active') {
-                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
                 $this->globalService->forceSignOut($entityManager, $thisuserId);
             }
 
@@ -173,7 +173,7 @@ class UnusedCategoriesController extends AbstractController
             }
 
             if ($thisuserStatus !== 'active') {
-                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
                 $this->globalService->forceSignOut($entityManager, $thisuserId);
             }
 
@@ -211,7 +211,7 @@ class UnusedCategoriesController extends AbstractController
             }
 
             if ($thisuserStatus !== 'active') {
-                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
                 $this->globalService->forceSignOut($entityManager, $thisuserId);
             }
 
@@ -248,7 +248,7 @@ class UnusedCategoriesController extends AbstractController
         }
 
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 

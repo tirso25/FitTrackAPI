@@ -2,6 +2,8 @@
 
 namespace App\Service;
 
+use Symfony\Component\HttpFoundation\Response;
+
 class FavoritesExercisesService
 {
     public function getFavouriteExercisesByUserId(int $id, $entityManager)
@@ -18,7 +20,7 @@ class FavoritesExercisesService
         $data = [];
 
         if (empty($favorites)) {
-            $data = ['type' => 'warning', 'message' => 'This user has a private profile or no bookmarks'];
+            $data = ['type' => 'warning', 'message' => 'This user has a private profile or no bookmarks', Response::HTTP_BAD_REQUEST];
         }
 
         foreach ($favorites as $favourite) {
@@ -52,7 +54,7 @@ class FavoritesExercisesService
         $data = [];
 
         if (empty($favorites)) {
-            $data = ['type' => 'warning', 'message' => 'You have no exercises added to favorites'];
+            $data = ['type' => 'warning', 'message' => 'You have no exercises added to favorites', Response::HTTP_BAD_REQUEST];
         }
 
         foreach ($favorites as $favourite) {

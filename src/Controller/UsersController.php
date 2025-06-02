@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Roles;
 use App\Entity\Users;
 use App\Service\FavoritesExercisesService;
+use App\Service\FavouritesCoachsService;
 use App\Service\GlobalService;
 use App\Service\RoleService;
 use App\Service\UserService;
@@ -28,6 +29,7 @@ class UsersController extends AbstractController
         private GlobalService $globalService,
         private FavoritesExercisesService $favoriteExercisesService,
         private RoleService $roleService,
+        private FavouritesCoachsService $favouritesCoachsService,
     ) {}
 
     //!CON JS AL DEVOLVER UN JSON CON EL active SE PUEDE FILTAR EN EL FRONT POR active SIN NECESIDAD DE CREAR UN METODO DE seeAllActiveUsers Y QUITARNIOS EL RECARGAR LA PÁGINA PUDIENDIO HACER UN Switches PARA ALTERNAR ENTRE ACTIVOS O TODOS
@@ -45,7 +47,7 @@ class UsersController extends AbstractController
         }
 
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
@@ -139,7 +141,7 @@ class UsersController extends AbstractController
         }
 
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
@@ -162,14 +164,18 @@ class UsersController extends AbstractController
         }
 
         $data = [];
-        $favs = $this->favoriteExercisesService->getFavouriteExercisesByUserId($id, $entityManager);
+
+        $exercisesFavorites = $this->favoriteExercisesService->getFavouriteExercisesByUserId($id, $entityManager);
+        $coachsFavorites = $this->favouritesCoachsService->getFavouriteCoachsByUserId($id, $entityManager);
+
         if ($thisuserRole !== "ROLE_ADMIN" && $thisuserId  !== $id) {
             $data[] = [
                 'id_usr' => $user->getUserId(),
                 'username' => $user->getDisplayUsername(),
                 'description' => $user->getDescription(),
                 'date_union' => $user->getDateUnion(),
-                'exercisesFavorites' => $favs
+                'exercisesFavorites' => $exercisesFavorites,
+                'coachsFavorites' => $coachsFavorites
             ];
         } else {
             $data[] = [
@@ -520,7 +526,7 @@ class UsersController extends AbstractController
         }
 
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
@@ -602,7 +608,6 @@ class UsersController extends AbstractController
                 ]
             ]);
         } catch (\Exception $e) {
-            error_log("TokenExisting error: " . $e->getMessage());
             return $this->json([
                 'type' => 'error',
                 'message' => 'Error checking token'
@@ -679,8 +684,8 @@ class UsersController extends AbstractController
             }
 
             if ($thisuserStatus !== 'active') {
-                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
-                $this->globalService->forceSignOut($entityManager, $thisuserRole);
+                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
+                $this->globalService->forceSignOut($entityManager, $thisuserId);
             }
 
             if ($thisuserRole !== 'ROLE_ADMIN') {
@@ -787,8 +792,8 @@ class UsersController extends AbstractController
             }
 
             if ($thisuserStatus !== 'active') {
-                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
-                $this->globalService->forceSignOut($entityManager, $thisuserRole);
+                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
+                $this->globalService->forceSignOut($entityManager, $thisuserId);
             }
 
             if ($thisuserRole !== 'ROLE_ADMIN') {
@@ -837,8 +842,8 @@ class UsersController extends AbstractController
         }
 
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
-            $this->globalService->forceSignOut($entityManager, $thisuserRole);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
+            $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
         $user = $entityManager->find(Users::class, $id);
@@ -879,6 +884,8 @@ class UsersController extends AbstractController
             ];
         }
 
+        $status = ['active', 'deleted'];
+
         if ($request->isMethod('GET')) {
             /**
              * @OA\Get(
@@ -902,7 +909,8 @@ class UsersController extends AbstractController
                 'status' => $user->getStatus(),
                 'role_id' => $user->getRole()->getRoleId(),
                 'role_name' => $user->getRole()->getName(),
-                'roles' => $rolesData
+                'roles' => $rolesData,
+                'status' => $status
             ];
 
             return $this->json($data, Response::HTTP_OK);
@@ -1075,13 +1083,15 @@ class UsersController extends AbstractController
     {
         /** @var \App\Entity\Users $thisuser */
         $thisuser = $this->getUser();
+        $thisuserStatus = $thisuser->getStatus();
 
         if (!$thisuser) {
             return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
         }
 
-        if ($thisuser->getStatus() !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+        if ($thisuserStatus !== 'active') {
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
+            $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
         return $this->json([

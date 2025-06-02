@@ -65,10 +65,21 @@ class Users implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Exercises::class, orphanRemoval: true)]
     private Collection $exercises;
 
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: FavoritesCoachs::class, orphanRemoval: true)]
+    private Collection $favoriteCoachs;
+
+    #[ORM\OneToMany(mappedBy: 'coach', targetEntity: FavoritesCoachs::class, orphanRemoval: true)]
+    private Collection $fans;
+
+    #[ORM\OneToOne(mappedBy: 'coach', targetEntity: LikesCoachs::class, cascade: ['persist', 'remove'])]
+    private ?LikesCoachs $likesCoachs = null;
+
     public function __construct()
     {
         $this->favoriteExercises = new ArrayCollection();
         $this->exercises = new ArrayCollection();
+        $this->favoriteCoachs = new ArrayCollection();
+        $this->fans = new ArrayCollection();
     }
 
     public function getUserId(): ?int
@@ -227,5 +238,27 @@ class Users implements UserInterface, PasswordAuthenticatedUserInterface
     public function getUsername(): string
     {
         return $this->email ?? '';
+    }
+
+    public function getFavoriteCoachs(): Collection
+    {
+        return $this->favoriteCoachs;
+    }
+
+    public function getFans(): Collection
+    {
+        return $this->fans;
+    }
+
+    public function getCoachLikes()
+    {
+        return $this->likesCoachs;
+    }
+
+    public function setCoachLikes($likesCoachs)
+    {
+        $this->likesCoachs = $likesCoachs;
+
+        return $this;
     }
 }

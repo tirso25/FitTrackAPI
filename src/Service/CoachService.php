@@ -38,4 +38,15 @@ class CoachService
 
         return $query->getResult();
     }
+
+    public function isActive($entityManager, $id)
+    {
+        $query = $entityManager->createQuery(
+            "SELECT c 
+            FROM App\Entity\Users c 
+            WHERE c.user_id = :id AND c.status = 'active'"
+        )->setParameter('id', $id);
+
+        return $query->getOneOrNullResult() !== null;
+    }
 }

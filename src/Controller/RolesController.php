@@ -39,7 +39,7 @@ class RolesController extends AbstractController
         }
 
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
@@ -81,7 +81,7 @@ class RolesController extends AbstractController
         }
 
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
@@ -121,7 +121,7 @@ class RolesController extends AbstractController
             }
 
             if ($thisuserStatus !== 'active') {
-                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
                 $this->globalService->forceSignOut($entityManager, $thisuserId);
             }
 
@@ -176,7 +176,7 @@ class RolesController extends AbstractController
             }
 
             if ($thisuserStatus !== 'active') {
-                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
                 $this->globalService->forceSignOut($entityManager, $thisuserId);
             }
 
@@ -212,9 +212,8 @@ class RolesController extends AbstractController
             if (!$thisuser) {
                 return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
             }
-
             if ($thisuserStatus !== 'active') {
-                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
                 $this->globalService->forceSignOut($entityManager, $thisuserId);
             }
 
@@ -252,7 +251,7 @@ class RolesController extends AbstractController
         }
 
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_FORBIDDEN);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
