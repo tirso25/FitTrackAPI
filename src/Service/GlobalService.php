@@ -25,9 +25,9 @@ class GlobalService
                 setcookie("rememberToken", "", [
                     'expires' => time() - 3600,
                     'path' => '/',
-                    'secure' => false,
-                    'httponly' => false,
-                    'samesite' => 'Strict'
+                    'secure' => true,
+                    'httponly' => true,
+                    'samesite' => 'None'
                 ]);
 
                 unset($_COOKIE['rememberToken']);
