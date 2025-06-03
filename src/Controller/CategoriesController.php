@@ -40,8 +40,8 @@ class CategoriesController extends AbstractController
             $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
-        if ($thisuserRole !== 'ROLE_ADMIN') {
-            return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
+        if (!in_array($thisuserRole, ["ROLE_ADMIN", "ROLE_COACH"])) {
+            return $this->json(['type' => 'error', 'message' => 'You are not an administrator or a coach'], Response::HTTP_BAD_REQUEST);
         }
 
         $categories = $entityManager->getRepository(Categories::class)->findAll();
@@ -82,8 +82,8 @@ class CategoriesController extends AbstractController
             $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
-        if ($thisuserRole !== 'ROLE_ADMIN') {
-            return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
+        if (!in_array($thisuserRole, ["ROLE_ADMIN", "ROLE_COACH"])) {
+            return $this->json(['type' => 'error', 'message' => 'You are not an administrator or a coach'], Response::HTTP_BAD_REQUEST);
         }
 
         $category = $entityManager->find(Categories::class, $id);
@@ -122,8 +122,8 @@ class CategoriesController extends AbstractController
                 $this->globalService->forceSignOut($entityManager, $thisuserId);
             }
 
-            if ($thisuserRole !== 'ROLE_ADMIN') {
-                return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
+            if (!in_array($thisuserRole, ["ROLE_ADMIN", "ROLE_COACH"])) {
+                return $this->json(['type' => 'error', 'message' => 'You are not an administrator or a coach'], Response::HTTP_BAD_REQUEST);
             }
 
             $data = json_decode($request->getContent(), true);
@@ -177,8 +177,8 @@ class CategoriesController extends AbstractController
                 $this->globalService->forceSignOut($entityManager, $thisuserId);
             }
 
-            if ($thisuserRole !== 'ROLE_ADMIN') {
-                return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
+            if (!in_array($thisuserRole, ["ROLE_ADMIN", "ROLE_COACH"])) {
+                return $this->json(['type' => 'error', 'message' => 'You are not an administrator or a coach'], Response::HTTP_BAD_REQUEST);
             }
 
             $categorie = $entityManager->find(Categories::class, $id);
@@ -215,8 +215,8 @@ class CategoriesController extends AbstractController
                 $this->globalService->forceSignOut($entityManager, $thisuserId);
             }
 
-            if ($thisuserRole !== 'ROLE_ADMIN') {
-                return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
+            if (!in_array($thisuserRole, ["ROLE_ADMIN", "ROLE_COACH"])) {
+                return $this->json(['type' => 'error', 'message' => 'You are not an administrator or a coach'], Response::HTTP_BAD_REQUEST);
             }
 
             $categorie = $entityManager->find(Categories::class, $id);
@@ -252,8 +252,8 @@ class CategoriesController extends AbstractController
             $this->globalService->forceSignOut($entityManager, $thisuserId);
         }
 
-        if ($thisuserRole !== 'ROLE_ADMIN') {
-            return $this->json(['type' => 'error', 'message' => 'You are not an administrator'], Response::HTTP_BAD_REQUEST);
+        if (!in_array($thisuserRole, ["ROLE_ADMIN", "ROLE_COACH"])) {
+            return $this->json(['type' => 'error', 'message' => 'You are not an administrator or a coach'], Response::HTTP_BAD_REQUEST);
         }
 
         $category = $entityManager->find(Categories::class, $id);
