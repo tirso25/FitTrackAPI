@@ -910,7 +910,7 @@ class UsersController extends AbstractController
                 'role_id' => $user->getRole()->getRoleId(),
                 'role_name' => $user->getRole()->getName(),
                 'roles' => $rolesData,
-                'status' => $status
+                'types_status' => $status
             ];
 
             return $this->json($data, Response::HTTP_OK);
