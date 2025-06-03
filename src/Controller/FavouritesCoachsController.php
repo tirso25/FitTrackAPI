@@ -27,16 +27,17 @@ class FavouritesCoachsController extends AbstractController
     {
         /** @var \App\Entity\Users $thisuser */
         $thisuser = $this->getUser();
+
+        if (!$thisuser) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged in'], Response::HTTP_UNAUTHORIZED);
+        }
+
         $thisuserId = $thisuser->getUserId();
         $thisuserStatus = $thisuser->getStatus();
 
-        if (!$thisuser) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
-        }
-
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
         }
 
         $favourites = $this->favouritesCoachsService->getFavouriteCoachs($thisuserId, $entityManager);
@@ -49,16 +50,17 @@ class FavouritesCoachsController extends AbstractController
     {
         /** @var \App\Entity\Users $thisuser */
         $thisuser = $this->getUser();
+
+        if (!$thisuser) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged in'], Response::HTTP_UNAUTHORIZED);
+        }
+
         $thisuserId = $thisuser->getUserId();
         $thisuserStatus = $thisuser->getStatus();
 
-        if (!$thisuser) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
-        }
-
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
         }
 
         $coach = $this->coachService->isActive($entityManager, $id);
@@ -92,16 +94,17 @@ class FavouritesCoachsController extends AbstractController
     {
         /** @var \App\Entity\Users $thisuser */
         $thisuser = $this->getUser();
+
+        if (!$thisuser) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged in'], Response::HTTP_UNAUTHORIZED);
+        }
+
         $thisuserId = $thisuser->getUserId();
         $thisuserStatus = $thisuser->getStatus();
 
-        if (!$thisuser) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
-        }
-
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
         }
 
         $thisCoach = $entityManager->find(Users::class, $id);

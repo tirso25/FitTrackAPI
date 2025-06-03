@@ -31,16 +31,17 @@ class FavoritesExercisesController extends AbstractController
     {
         /** @var \App\Entity\Users $thisuser */
         $thisuser = $this->getUser();
+
+        if (!$thisuser) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged in'], Response::HTTP_UNAUTHORIZED);
+        }
+
         $thisuserId = $thisuser->getUserId();
         $thisuserStatus = $thisuser->getStatus();
 
-        if (!$thisuser) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
-        }
-
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
         }
 
         $favourites = $this->favoriteExercisesService->getFavouriteExercises($thisuserId, $entityManager);
@@ -53,16 +54,17 @@ class FavoritesExercisesController extends AbstractController
     {
         /** @var \App\Entity\Users $thisuser */
         $thisuser = $this->getUser();
+
+        if (!$thisuser) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged in'], Response::HTTP_UNAUTHORIZED);
+        }
+
         $thisuserId = $thisuser->getUserId();
         $thisuserStatus = $thisuser->getStatus();
 
-        if (!$thisuser) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
-        }
-
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
         }
 
         $exercise = $this->exerciseService->isActive($id, $entityManager);
@@ -96,16 +98,17 @@ class FavoritesExercisesController extends AbstractController
     {
         /** @var \App\Entity\Users $thisuser */
         $thisuser = $this->getUser();
+
+        if (!$thisuser) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged in'], Response::HTTP_UNAUTHORIZED);
+        }
+
         $thisuserId = $thisuser->getUserId();
         $thisuserStatus = $thisuser->getStatus();
 
-        if (!$thisuser) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
-        }
-
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
         }
 
         $favourite =  $entityManager->getRepository(FavoritesExercises::class)->findOneBy(['user' => $thisuserId, 'exercise' => $id]);

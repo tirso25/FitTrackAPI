@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Roles;
 use App\Entity\Users;
+use App\Service\CoachService;
 use App\Service\FavoritesExercisesService;
 use App\Service\FavouritesCoachsService;
 use App\Service\GlobalService;
@@ -30,6 +31,7 @@ class UsersController extends AbstractController
         private FavoritesExercisesService $favoriteExercisesService,
         private RoleService $roleService,
         private FavouritesCoachsService $favouritesCoachsService,
+        private CoachService $coachService
     ) {}
 
     //!CON JS AL DEVOLVER UN JSON CON EL active SE PUEDE FILTAR EN EL FRONT POR active SIN NECESIDAD DE CREAR UN METODO DE seeAllActiveUsers Y QUITARNIOS EL RECARGAR LA PÁGINA PUDIENDIO HACER UN Switches PARA ALTERNAR ENTRE ACTIVOS O TODOS
@@ -38,17 +40,18 @@ class UsersController extends AbstractController
     {
         /** @var \App\Entity\Users $thisuser */
         $thisuser = $this->getUser();
-        $thisuserRole = $thisuser->getRole()->getName();
-        $thisuserId = $thisuser->getUserId();
-        $thisuserStatus = $thisuser->getStatus();
 
         if (!$thisuser) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'You are not logged in'], Response::HTTP_UNAUTHORIZED);
         }
 
+        $thisuserId = $thisuser->getUserId();
+        $thisuserRole = $thisuser->getRole()->getName();
+        $thisuserStatus = $thisuser->getStatus();
+
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
         }
 
         if ($thisuserRole !== 'ROLE_ADMIN') {
@@ -71,6 +74,7 @@ class UsersController extends AbstractController
                 'description' => $user->getDescription(),
                 'role' => $user->getRole()->getName(),
                 'status' => $user->getStatus(),
+                'public' => $user->getPublic(),
                 'date_union' => $user->getDateUnion()
             ];
         }
@@ -132,17 +136,18 @@ class UsersController extends AbstractController
     {
         /** @var \App\Entity\Users $thisuser */
         $thisuser = $this->getUser();
+
+        if (!$thisuser) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged in'], Response::HTTP_UNAUTHORIZED);
+        }
+
         $thisuserId = $thisuser->getUserId();
         $thisuserRole = $thisuser->getRole()->getName();
         $thisuserStatus = $thisuser->getStatus();
 
-        if (!$thisuser) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
-        }
-
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
         }
 
         if ($id === 1) {
@@ -168,7 +173,35 @@ class UsersController extends AbstractController
         $exercisesFavorites = $this->favoriteExercisesService->getFavouriteExercisesByUserId($id, $entityManager);
         $coachsFavorites = $this->favouritesCoachsService->getFavouriteCoachsByUserId($id, $entityManager);
 
-        if ($thisuserRole !== "ROLE_ADMIN" && $thisuserId  !== $id) {
+        if ($thisuserRole === "ROLE_ADMIN" || $thisuserRole === "ROLE_ROOT" || $user->getRole()->getName() === "ROLE_ADMIN" || $user->getRole()->getName() === "ROLE_ROOT") {
+            $data[] = [
+                'id_usr' => $user->getUserId(),
+                'username' => $user->getDisplayUsername(),
+                'description' => $user->getDescription(),
+                'date_union' => $user->getDateUnion(),
+            ];
+        } elseif ($thisuserRole === "ROLE_COACH" || $user->getRole()->getName() === "ROLE_COACH") {
+            $coachsExercises = $this->coachService->seeAllExercisesByCoach($entityManager, $thisuserId);
+
+            $exerciseList = [];
+
+            foreach ($coachsExercises as $exercise) {
+                $exerciseList[] = [
+                    'exercise_id' => $exercise->getExerciseId(),
+                    'exercise_name' => $exercise->getName(),
+                    'exercise_description' => $exercise->getDescription(),
+                    'exercise_category' => $exercise->getCategory()->getName(),
+                ];
+            }
+
+            $data[] = [
+                'id_usr' => $user->getUserId(),
+                'username' => $user->getDisplayUsername(),
+                'description' => $user->getDescription(),
+                'date_union' => $user->getDateUnion(),
+                'exercises' => $exerciseList,
+            ];
+        } else {
             $data[] = [
                 'id_usr' => $user->getUserId(),
                 'username' => $user->getDisplayUsername(),
@@ -176,16 +209,6 @@ class UsersController extends AbstractController
                 'date_union' => $user->getDateUnion(),
                 'exercisesFavorites' => $exercisesFavorites,
                 'coachsFavorites' => $coachsFavorites
-            ];
-        } else {
-            $data[] = [
-                'id_usr' => $user->getUserId(),
-                'email' => $user->getEmail(),
-                'username' => $user->getDisplayUsername(),
-                'description' => $user->getDescription(),
-                'role' => $user->getRole()->getName(),
-                'status' => $user->getStatus(),
-                'date_union' => $user->getDateUnion(),
             ];
         }
 
@@ -518,16 +541,17 @@ class UsersController extends AbstractController
     {
         /** @var \App\Entity\Users $thisuser */
         $thisuser = $this->getUser();
+
+        if (!$thisuser) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged in'], Response::HTTP_UNAUTHORIZED);
+        }
+
         $thisuserId = $thisuser->getUserId();
         $thisuserStatus = $thisuser->getStatus();
 
-        if (!$thisuser) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
-        }
-
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
         }
 
         $this->globalService->forceSignOut($entityManager, $thisuserId);
@@ -676,16 +700,18 @@ class UsersController extends AbstractController
         try {
             /** @var \App\Entity\Users $thisuser */
             $thisuser = $this->getUser();
+
+            if (!$thisuser) {
+                return $this->json(['type' => 'error', 'message' => 'You are not logged in'], Response::HTTP_UNAUTHORIZED);
+            }
+
+            $thisuserId = $thisuser->getUserId();
             $thisuserRole = $thisuser->getRole()->getName();
             $thisuserStatus = $thisuser->getStatus();
 
-            if (!$thisuser) {
-                return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
-            }
-
             if ($thisuserStatus !== 'active') {
-                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
                 $this->globalService->forceSignOut($entityManager, $thisuserId);
+                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             }
 
             if ($thisuserRole !== 'ROLE_ADMIN') {
@@ -784,16 +810,18 @@ class UsersController extends AbstractController
         try {
             /** @var \App\Entity\Users $thisuser */
             $thisuser = $this->getUser();
+
+            if (!$thisuser) {
+                return $this->json(['type' => 'error', 'message' => 'You are not logged in'], Response::HTTP_UNAUTHORIZED);
+            }
+
+            $thisuserId = $thisuser->getUserId();
             $thisuserRole = $thisuser->getRole()->getName();
             $thisuserStatus = $thisuser->getStatus();
 
-            if (!$thisuser) {
-                return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
-            }
-
             if ($thisuserStatus !== 'active') {
-                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
                 $this->globalService->forceSignOut($entityManager, $thisuserId);
+                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             }
 
             if ($thisuserRole !== 'ROLE_ADMIN') {
@@ -832,18 +860,19 @@ class UsersController extends AbstractController
     {
         /** @var \App\Entity\Users $thisuser */
         $thisuser = $this->getUser();
-        $thisuserId = $thisuser->getUserId();
-        $thisuserRole = $thisuser->getRole()->getName();
-        $thisuserRoleId = $thisuser->getRole()->getRoleId();
-        $thisuserStatus = $thisuser->getStatus();
 
         if (!$thisuser) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'You are not logged in'], Response::HTTP_UNAUTHORIZED);
         }
 
+        $thisuserId = $thisuser->getUserId();
+        $thisuserRoleId = $thisuser->getRole()->getRoleId();
+        $thisuserRole = $thisuser->getRole()->getName();
+        $thisuserStatus = $thisuser->getStatus();
+
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
         }
 
         $user = $entityManager->find(Users::class, $id);
@@ -1079,19 +1108,22 @@ class UsersController extends AbstractController
      *     )
      * )
      */
-    public function whoami(): JsonResponse
+    public function whoami(EntityManagerInterface $entityManager): JsonResponse
     {
         /** @var \App\Entity\Users $thisuser */
         $thisuser = $this->getUser();
-        $thisuserStatus = $thisuser->getStatus();
 
         if (!$thisuser) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'You are not logged in'], Response::HTTP_UNAUTHORIZED);
         }
 
+        $thisuserId = $thisuser->getUserId();
+        $thisuserRole = $thisuser->getRole()->getName();
+        $thisuserStatus = $thisuser->getStatus();
+
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
         }
 
         return $this->json([

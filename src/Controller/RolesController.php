@@ -30,17 +30,18 @@ class RolesController extends AbstractController
     {
         /** @var \App\Entity\Users $thisuser */
         $thisuser = $this->getUser();
-        $thisuserRole = $thisuser->getRole()->getName();
-        $thisuserId = $thisuser->getUserId();
-        $thisuserStatus = $thisuser->getStatus();
 
         if (!$thisuser) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'You are not logged in'], Response::HTTP_UNAUTHORIZED);
         }
 
+        $thisuserId = $thisuser->getUserId();
+        $thisuserRole = $thisuser->getRole()->getName();
+        $thisuserStatus = $thisuser->getStatus();
+
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
         }
 
         if ($thisuserRole !== 'ROLE_ADMIN') {
@@ -72,17 +73,18 @@ class RolesController extends AbstractController
     {
         /** @var \App\Entity\Users $thisuser */
         $thisuser = $this->getUser();
-        $thisuserRole = $thisuser->getRole()->getName();
-        $thisuserId = $thisuser->getUserId();
-        $thisuserStatus = $thisuser->getStatus();
 
         if (!$thisuser) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'You are not logged in'], Response::HTTP_UNAUTHORIZED);
         }
 
+        $thisuserId = $thisuser->getUserId();
+        $thisuserRole = $thisuser->getRole()->getName();
+        $thisuserStatus = $thisuser->getStatus();
+
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
         }
 
         if ($thisuserRole !== 'ROLE_ADMIN') {
@@ -112,17 +114,18 @@ class RolesController extends AbstractController
         try {
             /** @var \App\Entity\Users $thisuser */
             $thisuser = $this->getUser();
-            $thisuserRole = $thisuser->getRole()->getName();
-            $thisuserId = $thisuser->getUserId();
-            $thisuserStatus = $thisuser->getStatus();
 
             if (!$thisuser) {
-                return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+                return $this->json(['type' => 'error', 'message' => 'You are not logged in'], Response::HTTP_UNAUTHORIZED);
             }
 
+            $thisuserId = $thisuser->getUserId();
+            $thisuserRole = $thisuser->getRole()->getName();
+            $thisuserStatus = $thisuser->getStatus();
+
             if ($thisuserStatus !== 'active') {
-                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
                 $this->globalService->forceSignOut($entityManager, $thisuserId);
+                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             }
 
             if ($thisuserRole !== 'ROLE_ADMIN') {
@@ -167,17 +170,18 @@ class RolesController extends AbstractController
         try {
             /** @var \App\Entity\Users $thisuser */
             $thisuser = $this->getUser();
-            $thisuserRole = $thisuser->getRole()->getName();
-            $thisuserId = $thisuser->getUserId();
-            $thisuserStatus = $thisuser->getStatus();
 
             if (!$thisuser) {
-                return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+                return $this->json(['type' => 'error', 'message' => 'You are not logged in'], Response::HTTP_UNAUTHORIZED);
             }
 
+            $thisuserId = $thisuser->getUserId();
+            $thisuserRole = $thisuser->getRole()->getName();
+            $thisuserStatus = $thisuser->getStatus();
+
             if ($thisuserStatus !== 'active') {
-                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
                 $this->globalService->forceSignOut($entityManager, $thisuserId);
+                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             }
 
             if ($thisuserRole !== 'ROLE_ADMIN') {
@@ -205,16 +209,18 @@ class RolesController extends AbstractController
         try {
             /** @var \App\Entity\Users $thisuser */
             $thisuser = $this->getUser();
-            $thisuserRole = $thisuser->getRole()->getName();
-            $thisuserId = $thisuser->getUserId();
-            $thisuserStatus = $thisuser->getStatus();
 
             if (!$thisuser) {
-                return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+                return $this->json(['type' => 'error', 'message' => 'You are not logged in'], Response::HTTP_UNAUTHORIZED);
             }
+
+            $thisuserId = $thisuser->getUserId();
+            $thisuserRole = $thisuser->getRole()->getName();
+            $thisuserStatus = $thisuser->getStatus();
+
             if ($thisuserStatus !== 'active') {
-                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
                 $this->globalService->forceSignOut($entityManager, $thisuserId);
+                return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             }
 
             if ($thisuserRole !== 'ROLE_ADMIN') {
@@ -242,17 +248,18 @@ class RolesController extends AbstractController
 
         /** @var \App\Entity\Users $thisuser */
         $thisuser = $this->getUser();
-        $thisuserRole = $thisuser->getRole()->getName();
-        $thisuserId = $thisuser->getUserId();
-        $thisuserStatus = $thisuser->getStatus();
 
         if (!$thisuser) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['type' => 'error', 'message' => 'You are not logged in'], Response::HTTP_UNAUTHORIZED);
         }
 
+        $thisuserId = $thisuser->getUserId();
+        $thisuserRole = $thisuser->getRole()->getName();
+        $thisuserStatus = $thisuser->getStatus();
+
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
         }
 
         if ($thisuserRole !== 'ROLE_ADMIN') {

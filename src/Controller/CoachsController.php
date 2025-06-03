@@ -24,16 +24,17 @@ class CoachsController extends AbstractController
     {
         /** @var \App\Entity\Users $thisuser */
         $thisuser = $this->getUser();
+
+        if (!$thisuser) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged in'], Response::HTTP_UNAUTHORIZED);
+        }
+
         $thisuserId = $thisuser->getUserId();
         $thisuserStatus = $thisuser->getStatus();
 
-        if (!$thisuser) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
-        }
-
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
         }
 
         $coachs = $this->coachService->seeAllCoachs($entityManager);
@@ -60,16 +61,17 @@ class CoachsController extends AbstractController
     {
         /** @var \App\Entity\Users $thisuser */
         $thisuser = $this->getUser();
+
+        if (!$thisuser) {
+            return $this->json(['type' => 'error', 'message' => 'You are not logged in'], Response::HTTP_UNAUTHORIZED);
+        }
+
         $thisuserId = $thisuser->getUserId();
         $thisuserStatus = $thisuser->getStatus();
 
-        if (!$thisuser) {
-            return $this->json(['type' => 'error', 'message' => 'You are not logged'], Response::HTTP_BAD_REQUEST);
-        }
-
         if ($thisuserStatus !== 'active') {
-            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
             $this->globalService->forceSignOut($entityManager, $thisuserId);
+            return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
         }
 
         $coach = $entityManager->find(Users::class, $id);

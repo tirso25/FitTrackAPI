@@ -2,6 +2,8 @@
 
 namespace App\Service;
 
+use App\Entity\Users;
+
 class CoachService
 {
     public function seeAllCoachs($entityManager)
@@ -27,18 +29,6 @@ class CoachService
         return $query->getResult();
     }
 
-    public function seeAllExercisesByCoach($entityManager, int $coach_id)
-    {
-        $query = $entityManager->createQuery(
-            "SELECT e
-             FROM App\Entity\Exercises e
-             WHERE e.user.userId = :coach_id
-             AND e.active = 1"
-        )->setParameter('coach_id', $coach_id);
-
-        return $query->getResult();
-    }
-
     public function isActive($entityManager, $id)
     {
         $query = $entityManager->createQuery(
@@ -48,5 +38,19 @@ class CoachService
         )->setParameter('id', $id);
 
         return $query->getOneOrNullResult() !== null;
+    }
+
+    public function seeAllExercisesByCoach($entityManager, int $coach_id)
+    {
+        $user = $entityManager->getRepository(Users::class)->find($coach_id);
+
+        $query = $entityManager->createQuery(
+            "SELECT e
+            FROM App\Entity\Exercises e
+            WHERE e.user = :coach
+            AND e.active = 1"
+        )->setParameter('coach', $user);
+
+        return $query->getResult();
     }
 }

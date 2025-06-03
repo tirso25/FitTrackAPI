@@ -350,7 +350,7 @@ AFTER UPDATE ON users
 FOR EACH ROW
 BEGIN
   IF NEW.role = 2 AND OLD.role != 2 THEN
-    INSERT INTO likes_coachs (coach_id, likes, created_at)
-    VALUES (NEW.user_id, 0, CURRENT_TIMESTAMP);
+    INSERT INTO likes_coachs (coach_id, likes)
+    VALUES (NEW.user_id, 0);
   END IF;
 END;
