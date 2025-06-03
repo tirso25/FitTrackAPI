@@ -150,10 +150,6 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'You are not active'], Response::HTTP_UNAUTHORIZED);
         }
 
-        if ($id === 1) {
-            return $this->json(['type' => 'warning', 'message' => 'The user is not available'], Response::HTTP_BAD_REQUEST);
-        }
-
         $user = $entityManager->getRepository(Users::class)->findOneBy(['user_id' => $id]);
 
         if (!$user) {
@@ -164,7 +160,7 @@ class UsersController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'The user is pending activation'], Response::HTTP_BAD_REQUEST);
         }
 
-        if ($user->getRole() === 1) {
+        if ($user->getRole()->getName() === "ROLE_ROOT" || $user->getRole()->getName() === "ROLE_ADMIN") {
             return $this->json(['type' => 'warning', 'message' => 'The user is not available'], Response::HTTP_BAD_REQUEST);
         }
 
@@ -173,14 +169,7 @@ class UsersController extends AbstractController
         $exercisesFavorites = $this->favoriteExercisesService->getFavouriteExercisesByUserId($id, $entityManager);
         $coachsFavorites = $this->favouritesCoachsService->getFavouriteCoachsByUserId($id, $entityManager);
 
-        if ($thisuserRole === "ROLE_ADMIN" || $thisuserRole === "ROLE_ROOT" || $user->getRole()->getName() === "ROLE_ADMIN" || $user->getRole()->getName() === "ROLE_ROOT") {
-            $data[] = [
-                'id_usr' => $user->getUserId(),
-                'username' => $user->getDisplayUsername(),
-                'description' => $user->getDescription(),
-                'date_union' => $user->getDateUnion(),
-            ];
-        } elseif ($thisuserRole === "ROLE_COACH" || $user->getRole()->getName() === "ROLE_COACH") {
+        if ($thisuserRole === "ROLE_COACH" || $user->getRole()->getName() === "ROLE_COACH") {
             $coachsExercises = $this->coachService->seeAllExercisesByCoach($entityManager, $thisuserId);
 
             $exerciseList = [];
@@ -196,6 +185,7 @@ class UsersController extends AbstractController
 
             $data[] = [
                 'id_usr' => $user->getUserId(),
+                'email' => $user->getEmail(),
                 'username' => $user->getDisplayUsername(),
                 'description' => $user->getDescription(),
                 'date_union' => $user->getDateUnion(),
@@ -204,6 +194,7 @@ class UsersController extends AbstractController
         } else {
             $data[] = [
                 'id_usr' => $user->getUserId(),
+                'email' => $user->getEmail(),
                 'username' => $user->getDisplayUsername(),
                 'description' => $user->getDescription(),
                 'date_union' => $user->getDateUnion(),
