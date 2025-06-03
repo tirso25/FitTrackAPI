@@ -48,7 +48,8 @@ class CoachsController extends AbstractController
         foreach ($coachs as $coach) {
             $data[] = [
                 'id_ch' => $coach->getUserId(),
-                'username' => $coach->getUsername(),
+                'email' => $coach->getEmail(),
+                'username' => $coach->getDisplayUsername(),
                 'description' => $coach->getDescription(),
             ];
         }
