@@ -344,13 +344,180 @@ BEGIN
     END IF;
 END;
 
--- Triggers para sincronización/cambios con entrenadores
+
+
+
+-- -- Triggers para sincronización/cambios con entrenadores
+-- CREATE TRIGGER trg_initialize_likes_coachs_counter
+-- AFTER UPDATE ON users
+-- FOR EACH ROW
+-- BEGIN
+--   IF NEW.role = 3 AND OLD.role != 3 OR NEW.ststus = 'active' THEN
+--     INSERT INTO likes_coachs (coach_id, likes)
+--     VALUES (NEW.user_id, 0);
+--   END IF;
+-- END;
+
+-- CREATE TRIGGER trg_delete_likes_coachs
+-- AFTER UPDATE ON users
+-- FOR EACH ROW
+-- BEGIN
+--     IF OLD.role = 3 AND NEW.role != 3 OR NEW.ststus = 'deleted' THEN
+--         DELETE FROM like_coachs WHERE coach_id = OLD.user_id;
+--     END IF;
+-- END;
+
+-- CREATE TRIGGER trg_increment_likes_on_favorite_coachs_add
+-- AFTER INSERT ON favorites_coachs
+-- FOR EACH ROW
+-- BEGIN
+--     UPDATE like_coachs
+--     SET likes = likes + 1
+--     WHERE coach_id = NEW.coach_id;
+-- END;
+
+-- CREATE TRIGGER trg_decrement_likes_on_favorite_coachs_add
+-- AFTER DELETE ON favorites_coachs
+-- FOR EACH ROW
+-- BEGIN
+--     UPDATE like_coachs
+--     SET likes = likes - 1
+--     WHERE coach_id = OLD.coach_id;
+-- END;
+
+-- CREATE TRIGGER trg_handle_likes_on_favorite_coachs_activation
+-- AFTER UPDATE ON favorites_coachs
+-- FOR EACH ROW
+-- BEGIN
+--     IF OLD.active = FALSE AND NEW.active = TRUE THEN
+--       UPDATE like_coachs
+--       SET likles = likes + 1
+--       WHERE coach_id = OLD.coach_id;
+    
+--     ELSEIF OLD.active = TRUE AND NEW.active = FALSE THEN
+--       UPDATE like_coachs
+--       SET likles = likes - 1
+--       WHERE coach_id = OLD.coach_id;
+--     END IF;
+-- END;
+
+
+
 CREATE TRIGGER trg_initialize_likes_coachs_counter
 AFTER UPDATE ON users
 FOR EACH ROW
 BEGIN
-  IF NEW.role = 2 AND OLD.role != 2 THEN
-    INSERT INTO likes_coachs (coach_id, likes)
-    VALUES (NEW.user_id, 0);
-  END IF;
+    IF NEW.role = 3 AND OLD.role != 3 AND NEW.status = 'active' THEN
+        INSERT INTO likes_coachs (coach_id, likes)
+        VALUES (NEW.user_id, 0);
+    END IF;
+END;
+
+CREATE TRIGGER trg_delete_likes_coachs
+AFTER UPDATE ON users
+FOR EACH ROW
+BEGIN
+    IF (OLD.role = 3 AND NEW.role != 3) OR NEW.status = 'deleted' THEN
+        DELETE FROM likes_coachs WHERE coach_id = OLD.user_id;
+    END IF;
+END;
+
+CREATE TRIGGER trg_increment_likes_on_favorite_coachs_add
+AFTER INSERT ON favorites_coachs
+FOR EACH ROW
+BEGIN
+    IF NEW.active = TRUE THEN
+        UPDATE likes_coachs
+        SET likes = likes + 1
+        WHERE coach_id = NEW.coach_id;
+    END IF;
+END;
+
+CREATE TRIGGER trg_decrement_likes_on_favorite_coachs_remove
+AFTER DELETE ON favorites_coachs
+FOR EACH ROW
+BEGIN
+    IF OLD.active = TRUE THEN
+        UPDATE likes_coachs
+        SET likes = likes - 1
+        WHERE coach_id = OLD.coach_id; 
+FOR EACH ROW
+BEGIN
+    IF OLD.active = FALSE AND NEW.active = TRUE THEN
+        UPDATE likes_coachs
+        SET likes = likes + 1
+        WHERE coach_id = OLD.coach_id;
+        
+    ELSEIF OLD.active = TRUE AND NEW.active = FALSE THEN
+        UPDATE likes_coachs
+        SET likes = likes - 1
+        WHERE coach_id = OLD.coach_id;
+    END IF;
+END;
+
+CREATE TRIGGER trg_sync_favorites_coachs_on_user_status_change
+AFTER UPDATE ON users
+FOR EACH ROW
+BEGIN
+    -- Usuario eliminado → desactivar sus favoritos y restar likes
+    IF NEW.status = 'deleted' AND OLD.status != 'deleted' THEN
+        UPDATE favorites_coachs
+        SET active = FALSE
+        WHERE user_id = NEW.user_id;
+
+        UPDATE likes_coachs lc
+        JOIN favorites_coachs fc ON lc.coach_id = fc.coach_id
+        SET lc.likes = lc.likes - 1
+        WHERE fc.user_id = NEW.user_id AND fc.active = TRUE;
+
+    -- Usuario reactivado → reactivar favoritos (si coach sigue activo)
+    ELSEIF NEW.status = 'active' AND OLD.status = 'deleted' THEN
+        UPDATE favorites_coachs fc
+        JOIN users c ON fc.coach_id = c.user_id
+        SET fc.active = TRUE
+        WHERE fc.user_id = NEW.user_id AND c.status = 'active';
+
+        UPDATE likes_coachs lc
+        JOIN favorites_coachs fc ON lc.coach_id = fc.coach_id
+        JOIN users c ON fc.coach_id = c.user_id
+        SET lc.likes = lc.likes + 1
+        WHERE fc.user_id = NEW.user_id AND fc.active = TRUE AND c.status = 'active';
+    END IF;
+END;
+
+CREATE TRIGGER trg_sync_favorites_coachs_on_coach_status_change
+AFTER UPDATE ON users
+FOR EACH ROW
+BEGIN
+    -- Solo si el usuario es coach
+    IF OLD.role = 3 AND NEW.role = 3 THEN
+        -- Si el coach es desactivado
+        IF NEW.status = 'deleted' AND OLD.status != 'deleted' THEN
+            UPDATE favorites_coachs
+            SET active = FALSE
+            WHERE coach_id = NEW.user_id;
+
+            UPDATE likes_coachs
+            SET likes = likes - (
+                SELECT COUNT(*) FROM favorites_coachs
+                WHERE coach_id = NEW.user_id AND active = TRUE
+            )
+            WHERE coach_id = NEW.user_id;
+
+        -- Si el coach es reactivado
+        ELSEIF NEW.status = 'active' AND OLD.status = 'deleted' THEN
+            UPDATE favorites_coachs fc
+            JOIN users u ON fc.user_id = u.user_id
+            SET fc.active = TRUE
+            WHERE fc.coach_id = NEW.user_id AND u.status = 'active';
+
+            UPDATE likes_coachs
+            SET likes = likes + (
+                SELECT COUNT(*) FROM favorites_coachs fc
+                JOIN users u ON fc.user_id = u.user_id
+                WHERE fc.coach_id = NEW.user_id AND u.status = 'active'
+            )
+            WHERE coach_id = NEW.user_id;
+        END IF;
+    END IF;
 END;
