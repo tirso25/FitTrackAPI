@@ -170,7 +170,7 @@ class UsersController extends AbstractController
         $coachsFavorites = $this->favouritesCoachsService->getFavouriteCoachsByUserId($id, $entityManager);
 
         if ($thisuserRole === "ROLE_COACH" || $user->getRole()->getName() === "ROLE_COACH") {
-            $coachsExercises = $this->coachService->seeAllExercisesByCoach($entityManager, $thisuserId);
+            $coachsExercises = $this->coachService->seeAllExercisesByCoach($entityManager, $id);
 
             $exerciseList = [];
 
