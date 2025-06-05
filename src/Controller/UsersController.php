@@ -867,6 +867,11 @@ class UsersController extends AbstractController
         }
 
         $user = $entityManager->find(Users::class, $id);
+
+        if (!$user) {
+            return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_UNAUTHORIZED);
+        }
+
         $roleModifyUser = $user->getRole()->getName();
 
         if ($roleModifyUser === "ROLE_ROOT") {
@@ -980,7 +985,7 @@ class UsersController extends AbstractController
 
                 $password_regex = "/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{5,}$/";
                 $username_regex = "/^[a-z0-9]{5,20}$/";
-                $description_regex = "/^[a-zA-Z0-9]{5,500}$/";
+                $description_regex = "/^[a-zA-Z0-9\s]{5,500}$/";
 
                 if ($username === "" || !isset($password) || $roleId === "" || $public === null || $status === null) {
                     return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);

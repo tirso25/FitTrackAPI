@@ -379,7 +379,7 @@ class ExercisesController extends AbstractController
                 : null;
 
             $name_regex = "/^[a-z0-9]{1,30}$/";
-            $description_regex = "/^[a-zA-Z0-9]{10,500}$/";
+            $description_regex = "/^[a-zA-Z0-9\s]{5,500}$/";
 
             if ($name === "" || $description === "" || $category_id === "" || $active === null || $coach_id === "") {
                 return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
