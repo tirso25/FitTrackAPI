@@ -2,8 +2,6 @@
 
 namespace App\Service;
 
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
-
 class GlobalService
 {
     public function __construct(

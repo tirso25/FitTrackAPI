@@ -576,12 +576,9 @@ class UsersController extends AbstractController
         try {
             $token = $request->cookies->get('rememberToken');
 
-            // if (!$token) {
-            //     return $this->json([
-            //         'type' => 'info',
-            //         'message' => 'No remember token found'
-            //     ], Response::HTTP_BAD_REQUEST);
-            // }
+            if (!$token) {
+                return $this->json(['type' => 'info', 'message' => 'No remember token found']);
+            }
 
             $user = $entityManager->getRepository(Users::class)->findOneBy(['token' => $token]);
 
