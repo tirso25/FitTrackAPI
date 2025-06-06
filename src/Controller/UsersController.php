@@ -1246,7 +1246,7 @@ class UsersController extends AbstractController
                                         Enjoy the app and reach your goals in a smarter way!
                                     </p>
                                     <div style="text-align: center; margin-top: 30px;">
-                                        <a href="https://fittrackapi-fmwr.onrender.com" style="background-color: #4caf50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                                        <a href="https://fittrackapp.vercel.app/EmailCheck" style="background-color: #4caf50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
                                             Go to FitTrack
                                         </a>
                                     </div>
