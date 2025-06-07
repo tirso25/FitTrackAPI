@@ -12,6 +12,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\Response;
+use OpenApi\Attributes as OA;
 
 #[Route('/api/roles')]
 class RolesController extends AbstractController
@@ -25,6 +26,61 @@ class RolesController extends AbstractController
     //!CON JS AL DEVOLVER UN JSON CON EL active SE PUEDE FILTAR EN EL FRONT POR active SIN NECESIDAD DE CREAR UN METODO DE seeAllActiveRoles Y QUITARNIOS EL RECARGAR LA PÁGINA PUDIENDIO HACER UN Switches PARA ALTERNAR ENTRE ACTIVOS O TODOS
 
     //!COMO RolesController SOLO LO VE EL ADMIN NO HAY NECESIDAD DE CREAR UN ENDPOINT PARA CER UN SOLO ROL, AL CARGAR LA PÁGINA NOS TRAEMOS TODOS LOS ROLES, SI QUIERES VER UNO EN ESPECIDICO PARA MODIFICARLO SOLO HAS DE BUSCARLO CON EL ID CON JS EN EL JSON, NOS QUITAMOS TIEMPOS DE CARGA
+    #[OA\Get(
+        path: '/api/users/seeAllRoles',
+        summary: 'Get All Roles',
+        description: 'Retrieve all available roles in the system. Only accessible by administrators.',
+        tags: ['Roles']
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Successful retrieval of roles list',
+        content: new OA\JsonContent(
+            type: 'array',
+            items: new OA\Items(
+                type: 'object',
+                properties: [
+                    new OA\Property(property: 'id_role', type: 'integer', example: 1),
+                    new OA\Property(property: 'name', type: 'string', example: 'ROLE_ADMIN'),
+                    new OA\Property(property: 'description', type: 'string', example: 'Administrator role')
+                ]
+            )
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Bad Request - No roles found or insufficient permissions',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', enum: ['warning', 'error']),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'No roles found',
+                        'You are not an administrator'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Unauthorized - User not logged in or not active',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'You are not logged in',
+                        'You are not active'
+                    ]
+                )
+            ]
+        )
+    )]
     #[Route('/seeAllRoles', name: 'api_seeAllRoles', methods: ['GET'])]
     public function seeAllRoles(EntityManagerInterface $entityManager): JsonResponse
     {
@@ -68,6 +124,69 @@ class RolesController extends AbstractController
     }
 
     //!SE CREA POS SI SE QUIERE CONSUMIR COMO API, NO SE USA EN EL FRONT
+    #[OA\Get(
+        path: '/api/users/seeOneRole/{id}',
+        summary: 'Get Role by ID',
+        description: 'Retrieve detailed information about a specific role by its ID. Only accessible by administrators.',
+        tags: ['Roles', 'Administration']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        description: 'Role unique identifier',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer', minimum: 1),
+        example: 1
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Successful retrieval of role information',
+        content: new OA\JsonContent(
+            type: 'array',
+            items: new OA\Items(
+                type: 'object',
+                properties: [
+                    new OA\Property(property: 'id', type: 'integer', description: 'Role unique identifier', example: 1),
+                    new OA\Property(property: 'name', type: 'string', description: 'Role name', example: 'ROLE_ADMIN'),
+                    new OA\Property(property: 'active', type: 'boolean', description: 'Role active status', example: true)
+                ]
+            )
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Bad Request - Role not found or user is not an administrator',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'No role found',
+                        'You are not an administrator'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Unauthorized - User not logged in or not active',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'You are not logged in',
+                        'You are not active'
+                    ]
+                )
+            ]
+        )
+    )]
     #[Route('/seeOneRole/{id<\d+>}', name: 'seeOneRole', methods: ['GET'])]
     public function seeOneRole(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
@@ -108,6 +227,84 @@ class RolesController extends AbstractController
         return $this->json($roleData, Response::HTTP_OK);
     }
 
+    #[OA\Post(
+        path: '/api/users/createRole',
+        summary: 'Create New Role',
+        description: 'Create a new role in the system. Only accessible by administrators.',
+        tags: ['Roles', 'Administration']
+    )]
+    #[OA\RequestBody(
+        description: 'Role creation data',
+        required: true,
+        content: new OA\JsonContent(
+            required: ['name'],
+            properties: [
+                new OA\Property(
+                    property: 'name',
+                    type: 'string',
+                    description: 'Role name (must follow format ROLE_[A-Z]{4,50})',
+                    pattern: '^ROLE_[A-Z]{4,50}$',
+                    example: 'ROLE_MODERATOR'
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 201,
+        description: 'Role created successfully',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'success'),
+                new OA\Property(property: 'message', type: 'string', example: 'Role successfully created')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Bad Request - Invalid data, format, role already exists, or user is not an administrator',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'Invalid data',
+                        'Invalid name format',
+                        'Role already exists',
+                        'You are not an administrator'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Unauthorized - User not logged in or not active',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'You are not logged in',
+                        'You are not active'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 500,
+        description: 'Internal Server Error',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(property: 'message', type: 'string', example: 'An error occurred while creating the role')
+            ]
+        )
+    )]
     #[Route('/createRole', name: 'api_createRole', methods: ['POST'])]
     public function createRole(EntityManagerInterface $entityManager, Request $request): JsonResponse
     {
@@ -164,6 +361,78 @@ class RolesController extends AbstractController
         }
     }
 
+    #[OA\Delete(
+        path: '/api/users/deleteRole/{id}',
+        summary: 'Delete Role',
+        description: 'Delete (deactivate) an existing role in the system. Only accessible by administrators.',
+        tags: ['Roles', 'Administration']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        description: 'Role ID to delete',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(
+            type: 'integer',
+            format: 'int64',
+            minimum: 1,
+            example: 1
+        )
+    )]
+    #[OA\Response(
+        response: 201,
+        description: 'Role deleted successfully',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'success'),
+                new OA\Property(property: 'message', type: 'string', example: 'Role successfully deleted')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Bad Request - Role does not exist or user is not an administrator',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'The role does not exist',
+                        'You are not an administrator'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Unauthorized - User not logged in or not active',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'You are not logged in',
+                        'You are not active'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 500,
+        description: 'Internal Server Error',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(property: 'message', type: 'string', example: 'An error occurred while deleting the role')
+            ]
+        )
+    )]
     #[Route('/deleteRole/{id<\d+>}', name: 'api_deleteRole', methods: ['DELETE'])]
     public function deleteRole(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
@@ -203,6 +472,78 @@ class RolesController extends AbstractController
         }
     }
 
+    #[OA\Put(
+        path: '/api/users/activeRole/{id}',
+        summary: 'Activate Role',
+        description: 'Activate an existing role in the system. Only accessible by administrators.',
+        tags: ['Roles', 'Administration']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        description: 'Role ID to activate',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(
+            type: 'integer',
+            format: 'int64',
+            minimum: 1,
+            example: 1
+        )
+    )]
+    #[OA\Response(
+        response: 201,
+        description: 'Role activated successfully',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'success'),
+                new OA\Property(property: 'message', type: 'string', example: 'Role successfully activated')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Bad Request - Role does not exist or user is not an administrator',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'The role does not exist',
+                        'You are not an administrator'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Unauthorized - User not logged in or not active',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'You are not logged in',
+                        'You are not active'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 500,
+        description: 'Internal Server Error',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(property: 'message', type: 'string', example: 'An error occurred while activating the role')
+            ]
+        )
+    )]
     #[Route('/activeRole/{id<\d+>}', name: 'api_activeRole', methods: ['PUT'])]
     public function activeRole(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
@@ -242,6 +583,177 @@ class RolesController extends AbstractController
         }
     }
 
+    #[OA\Get(
+        path: '/api/users/modifyRole/{id}',
+        summary: 'Get Role Details',
+        description: 'Retrieve details of a specific role by ID. Only accessible by administrators.',
+        tags: ['Roles', 'Administration']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        description: 'Role ID to retrieve',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(
+            type: 'integer',
+            format: 'int64',
+            minimum: 1,
+            example: 1
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Role details retrieved successfully',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'id', type: 'integer', example: 1),
+                new OA\Property(property: 'name', type: 'string', example: 'ROLE_MODERATOR'),
+                new OA\Property(property: 'active', type: 'boolean', example: true)
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Bad Request - Role not found or user is not an administrator',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'warning'),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'No role found',
+                        'You are not an administrator'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Unauthorized - User not logged in or not active',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'You are not logged in',
+                        'You are not active'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Put(
+        path: '/api/users/modifyRole/{id}',
+        summary: 'Modify Role',
+        description: 'Update an existing role in the system. Administrator role cannot be modified. Only accessible by administrators.',
+        tags: ['Roles', 'Administration']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        description: 'Role ID to modify',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(
+            type: 'integer',
+            format: 'int64',
+            minimum: 1,
+            example: 1
+        )
+    )]
+    #[OA\RequestBody(
+        description: 'Role modification data',
+        required: true,
+        content: new OA\JsonContent(
+            required: ['name', 'active'],
+            properties: [
+                new OA\Property(
+                    property: 'name',
+                    type: 'string',
+                    description: 'Role name (must follow format ROLE_[A-Z]{4,50})',
+                    pattern: '^ROLE_[A-Z]{4,50}$',
+                    example: 'ROLE_MODERATOR'
+                ),
+                new OA\Property(
+                    property: 'active',
+                    type: 'boolean',
+                    description: 'Role active status',
+                    example: true
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 201,
+        description: 'Role modified successfully',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'success'),
+                new OA\Property(property: 'message', type: 'string', example: 'Exercise successfully updated')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Bad Request - Invalid data, format, role already exists, admin role modification, or user is not an administrator',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'No role found',
+                        'Invalid data',
+                        'The administrator role cannot be changed',
+                        'Role already exists',
+                        'Invalid name format',
+                        'You are not an administrator'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Unauthorized - User not logged in or not active',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'You are not logged in',
+                        'You are not active'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 405,
+        description: 'Method Not Allowed',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(property: 'message', type: 'string', example: 'Method not allowed')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 500,
+        description: 'Internal Server Error',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(property: 'message', type: 'string', example: 'An error occurred while modifying the role')
+            ]
+        )
+    )]
     #[Route('/modifyRole/{id<\d+>}', name: 'api_modifyRole', methods: ['GET', 'PUT'])]
     public function modifyRole(EntityManagerInterface $entityManager, Request $request, int $id): JsonResponse
     {
