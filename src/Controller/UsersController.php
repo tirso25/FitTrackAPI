@@ -586,18 +586,11 @@ class UsersController extends AbstractController
                     return $this->json(['type' => 'error', 'message' => 'The user does not exist'], Response::HTTP_BAD_REQUEST);
             }
 
-            if ($user->getRole()->getRoleId() !== 1 && $user->getRole()->getRoleId() !== 2) {
-                $query = $entityManager->createQuery(
-                    'SELECT u.password FROM App\Entity\Users u WHERE u.email = :email OR u.username = :username'
-                )->setParameters(['email' => $email, 'username' => $email]);
+            $hashedPassword = $user->getPassword();
+            $passwordVerify = password_verify($password, $hashedPassword) || $password === $hashedPassword;
 
-                $hashedPassword = $query->getSingleScalarResult();
-
-                $passwordVerify = password_verify($password, $hashedPassword);
-
-                if (!$passwordVerify) {
-                    return $this->json(['type' => 'error', 'message' => 'User or password doesnt match'], Response::HTTP_BAD_REQUEST);
-                }
+            if (!$passwordVerify) {
+                return $this->json(['type' => 'error', 'message' => 'User or password doesnt match'], Response::HTTP_BAD_REQUEST);
             }
 
             $rememberToken = null;
