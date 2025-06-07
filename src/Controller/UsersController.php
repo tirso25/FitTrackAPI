@@ -20,7 +20,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Mime\Email;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
-use OpenApi\Annotations as OA;
+use OpenApi\Attributes as OA;
 
 #[Route('/api/users')]
 class UsersController extends AbstractController
@@ -35,6 +35,66 @@ class UsersController extends AbstractController
     ) {}
 
     //!CON JS AL DEVOLVER UN JSON CON EL active SE PUEDE FILTAR EN EL FRONT POR active SIN NECESIDAD DE CREAR UN METODO DE seeAllActiveUsers Y QUITARNIOS EL RECARGAR LA PÁGINA PUDIENDIO HACER UN Switches PARA ALTERNAR ENTRE ACTIVOS O TODOS
+    #[OA\Get(
+        path: '/api/users/seeAllUsers',
+        summary: 'Get All Users',
+        description: 'Retrieve a list of all users in the system (Admin only)',
+        tags: ['Users', 'Administration']
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Successful retrieval of users list',
+        content: new OA\JsonContent(
+            type: 'array',
+            items: new OA\Items(
+                type: 'object',
+                properties: [
+                    new OA\Property(property: 'id_usr', type: 'integer', example: 1),
+                    new OA\Property(property: 'email', type: 'string', example: 'user@example.com'),
+                    new OA\Property(property: 'username', type: 'string', example: 'username123'),
+                    new OA\Property(property: 'description', type: 'string', example: 'User description'),
+                    new OA\Property(property: 'role', type: 'string', example: 'ROLE_USER'),
+                    new OA\Property(property: 'status', type: 'string', example: 'active'),
+                    new OA\Property(property: 'public', type: 'boolean', example: true),
+                    new OA\Property(property: 'date_union', type: 'string', format: 'date-time')
+                ]
+            )
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Bad Request - No users found or insufficient permissions',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', enum: ['warning', 'error']),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'No users found',
+                        'You are not an administrator'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Unauthorized - User not logged in or not active',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'You are not logged in',
+                        'You are not active'
+                    ]
+                )
+            ]
+        )
+    )]
     #[Route('/seeAllUsers', name: 'api_seeAllUsers', methods: ['GET'])]
     public function seeAllUsers(EntityManagerInterface $entityManager): JsonResponse
     {
@@ -82,56 +142,99 @@ class UsersController extends AbstractController
         return $this->json($data, Response::HTTP_OK);
     }
 
+    #[OA\Get(
+        path: '/api/users/seeOneUser/{id}',
+        summary: 'Get Single User',
+        description: 'Retrieve detailed information about a specific user by ID. Response varies based on user role (Coach vs User)',
+        tags: ['Users']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        description: 'User ID to retrieve',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer', minimum: 1),
+        example: 1
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Successful retrieval of user information',
+        content: new OA\JsonContent(
+            type: 'array',
+            items: new OA\Items(
+                type: 'object',
+                properties: [
+                    new OA\Property(property: 'id_usr', type: 'integer', example: 1),
+                    new OA\Property(property: 'email', type: 'string', example: 'user@example.com'),
+                    new OA\Property(property: 'username', type: 'string', example: 'username123'),
+                    new OA\Property(property: 'description', type: 'string', example: 'User description'),
+                    new OA\Property(property: 'date_union', type: 'string', format: 'date-time'),
+                    new OA\Property(
+                        property: 'exercises',
+                        type: 'array',
+                        description: 'Present when user is a coach or current user is a coach',
+                        items: new OA\Items(
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'exercise_id', type: 'integer', example: 1),
+                                new OA\Property(property: 'exercise_name', type: 'string', example: 'Push ups'),
+                                new OA\Property(property: 'exercise_description', type: 'string', example: 'Basic push up exercise'),
+                                new OA\Property(property: 'exercise_category', type: 'string', example: 'Strength')
+                            ]
+                        )
+                    ),
+                    new OA\Property(
+                        property: 'exercisesFavorites',
+                        type: 'array',
+                        description: 'Present when user is not a coach and current user is not a coach',
+                        items: new OA\Items(type: 'object')
+                    ),
+                    new OA\Property(
+                        property: 'coachsFavorites',
+                        type: 'array',
+                        description: 'Present when user is not a coach and current user is not a coach',
+                        items: new OA\Items(type: 'object')
+                    )
+                ]
+            )
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Bad Request - User not found, pending activation, or restricted access',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', enum: ['error', 'warning']),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'The user does not exist',
+                        'The user is pending activation',
+                        'The user is not available'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Unauthorized - User not logged in or not active',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'You are not logged in',
+                        'You are not active'
+                    ]
+                )
+            ]
+        )
+    )]
     #[Route('/seeOneUser/{id<\d+>}', name: 'api_seeOneUser', methods: ['GET'])]
-    /**
-     * @OA\Get(
-     *     path="/api/users/seeOneUser/{id}",
-     *     summary="Get user details by ID",
-     *     tags={"Users"},
-     *     security={{"bearerAuth": {}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         description="User ID",
-     *         @OA\Schema(type="integer", format="int64", example=123)
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="User details",
-     *         @OA\JsonContent(
-     *             oneOf={
-     *                 @OA\Schema(ref="#/components/schemas/FullUserDetails"),
-     *                 @OA\Schema(ref="#/components/schemas/PublicUserDetails")
-     *             }
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Unauthorized",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="error"),
-     *             @OA\Property(property="message", type="string", example="You are not logged in")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=403,
-     *         description="Forbidden",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="error"),
-     *             @OA\Property(property="message", type="string", example="You are not active")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="User not found",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="error"),
-     *             @OA\Property(property="message", type="string", example="The user does not exist")
-     *         )
-     *     )
-     * )
-     */
     public function seeOneUser(EntityManagerInterface $entityManager, int $id)
     {
         /** @var \App\Entity\Users $thisuser */
@@ -206,6 +309,87 @@ class UsersController extends AbstractController
         return $this->json($data, Response::HTTP_OK);
     }
 
+    #[OA\Post(
+        path: '/api/users/signUp',
+        summary: 'User Registration',
+        description: 'Register a new user account with email, username and password',
+        tags: ['Users', 'Authentication']
+    )]
+    #[OA\RequestBody(
+        description: 'User registration data',
+        required: true,
+        content: new OA\JsonContent(
+            required: ['email', 'username', 'password', 'repeatPassword'],
+            properties: [
+                new OA\Property(
+                    property: 'email',
+                    type: 'string',
+                    format: 'email',
+                    description: 'Valid email address (max 255 chars)',
+                    example: 'user@example.com'
+                ),
+                new OA\Property(
+                    property: 'username',
+                    type: 'string',
+                    description: 'Username (5-20 chars, lowercase alphanumeric only)',
+                    example: 'username123'
+                ),
+                new OA\Property(
+                    property: 'password',
+                    type: 'string',
+                    description: 'Password (min 5 chars, must contain: uppercase, lowercase, number, special character)',
+                    example: 'MyPassword123!'
+                ),
+                new OA\Property(
+                    property: 'repeatPassword',
+                    type: 'string',
+                    description: 'Password confirmation (must match password)',
+                    example: 'MyPassword123!'
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 201,
+        description: 'User successfully created',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'success'),
+                new OA\Property(property: 'message', type: 'string', example: 'User successfully created')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Bad Request - Invalid data, format errors, or user already exists',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'Invalid data',
+                        'Invalid email format',
+                        'Invalid password format',
+                        'Invalid username format',
+                        'User already exists',
+                        'Passwords dont match'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 500,
+        description: 'Internal Server Error',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(property: 'message', type: 'string', example: 'An error occurred while singUp the user')
+            ]
+        )
+    )]
     #[Route('/signUp', name: 'api_signUp', methods: ['POST'])]
     public function signUp(EntityManagerInterface $entityManager, Request $request): JsonResponse
     {
@@ -266,88 +450,96 @@ class UsersController extends AbstractController
         }
     }
 
+    #[OA\Post(
+        path: '/api/users/signIn',
+        summary: 'User Sign In',
+        description: 'Authenticate user with email/username and password',
+        tags: ['Users', 'Authentication']
+    )]
+    #[OA\RequestBody(
+        description: 'User login credentials',
+        required: true,
+        content: new OA\JsonContent(
+            required: ['email', 'password', 'rememberme'],
+            properties: [
+                new OA\Property(
+                    property: 'email',
+                    type: 'string',
+                    description: 'User email or username (4-20 chars if username, valid email if email)',
+                    example: 'user@example.com'
+                ),
+                new OA\Property(
+                    property: 'password',
+                    type: 'string',
+                    description: 'User password (min 5 chars, must contain: uppercase, lowercase, number, special character)',
+                    example: 'MyPassword123!'
+                ),
+                new OA\Property(
+                    property: 'rememberme',
+                    type: 'boolean',
+                    description: 'Remember user session for 30 days',
+                    example: true
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Successful sign in',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'success'),
+                new OA\Property(property: 'message', type: 'string', example: 'Session successfully started'),
+                new OA\Property(property: 'token', type: 'string', example: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...'),
+                new OA\Property(
+                    property: 'userData',
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'this_user_id', type: 'integer', example: 1),
+                        new OA\Property(property: 'this_user_email', type: 'string', example: 'user@example.com'),
+                        new OA\Property(property: 'this_user_username', type: 'string', example: 'username123'),
+                        new OA\Property(property: 'this_user_role_id', type: 'integer', example: 2),
+                        new OA\Property(property: 'this_user_role', type: 'string', example: 'User'),
+                        new OA\Property(property: 'this_user_date_union', type: 'string', format: 'date-time')
+                    ]
+                ),
+                new OA\Property(property: 'rememberToken', type: 'string', example: 'a1b2c3d4e5f6...', description: 'Only present when rememberme is true')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Bad Request - Invalid data, format, user not found, or user status issues',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', enum: ['error', 'warning']),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'Invalid data',
+                        'Invalid email format',
+                        'Invalid username format',
+                        'Invalid password format',
+                        'The user does not exist',
+                        'This user is pending activation',
+                        'User or password doesnt match'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 500,
+        description: 'Internal Server Error',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(property: 'message', type: 'string', example: 'Error interno al hacer signIn: ...')
+            ]
+        )
+    )]
     #[Route('/signIn', name: 'api_signIn', methods: ['POST'])]
-    /**
-     * @Route("/signIn", name="api_signIn", methods={"POST"})
-     * 
-     * @OA\Post(
-     *     path="/api/users/signIn",
-     *     summary="User login",
-     *     tags={"Auth"},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         description="Login credentials",
-     *         @OA\JsonContent(
-     *             required={"email", "password", "rememberme"},
-     *             @OA\Property(property="email", type="string", description="Email or username", example="user@example.com"),
-     *             @OA\Property(property="password", type="string", format="password", minLength=5, example="SecurePass123!"),
-     *             @OA\Property(property="rememberme", type="boolean", description="Keep session active for 30 days", example=true)
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successful authentication",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="success"),
-     *             @OA\Property(property="message", type="string", example="Session successfully started"),
-     *             @OA\Property(property="token", type="string", example="eyJhbGciOiJIUzI1NiIsInR5cCI6...")
-     *         ),
-     *         @OA\Header(
-     *             header="Set-Cookie",
-     *             description="Remember token cookie",
-     *             @OA\Schema(type="string", example="rememberToken=abc123; Path=/; Secure; HttpOnly")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Validation error",
-     *         @OA\JsonContent(
-     *             oneOf={
-     *                 @OA\Schema(
-     *                     @OA\Property(property="type", type="string", example="error"),
-     *                     @OA\Property(property="message", type="string", example="Invalid credentials format")
-     *                 ),
-     *                 @OA\Schema(
-     *                     @OA\Property(property="type", type="string", example="error"),
-     *                     @OA\Property(property="message", type="string", example="Password does not meet requirements")
-     *                 )
-     *             }
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Authentication failure",
-     *         @OA\JsonContent(
-     *             oneOf={
-     *                 @OA\Schema(
-     *                     @OA\Property(property="type", type="string", example="error"),
-     *                     @OA\Property(property="message", type="string", example="Invalid credentials")
-     *                 ),
-     *                 @OA\Schema(
-     *                     @OA\Property(property="type", type="string", example="warning"),
-     *                     @OA\Property(property="message", type="string", example="Account pending activation")
-     *                 )
-     *             }
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=403,
-     *         description="Account status issue",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="error"),
-     *             @OA\Property(property="message", type="string", example="Account disabled")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=500,
-     *         description="Internal server error",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="error"),
-     *             @OA\Property(property="message", type="string", example="Internal authentication error")
-     *         )
-     *     )
-     * )
-     */
     public function signIn(EntityManagerInterface $entityManager, Request $request, JWTTokenManagerInterface $jwtManager, JWTEncoderInterface $jwtEncoder): JsonResponse
     {
         try {
@@ -485,49 +677,41 @@ class UsersController extends AbstractController
         }
     }
 
-    //!BORRAR EL JWT DEL LOCALSTORAGE 
+    //!BORRAR EL JWT DEL LOCALSTORAGE
+    #[OA\Post(
+        path: '/api/users/signOut',
+        summary: 'User Sign Out',
+        description: 'End user session and remove authentication tokens',
+        tags: ['Users', 'Authentication']
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Successful sign out',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'success'),
+                new OA\Property(property: 'message', type: 'string', example: 'Session successfully ended')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Unauthorized - User not logged in or not active',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'You are not logged in',
+                        'You are not active'
+                    ]
+                )
+            ]
+        )
+    )]
     #[Route('/signOut', name: 'api_signOut', methods: ['POST'])]
-    /**
-     * @OA\Post(
-     *     path="/api/users/signOut",
-     *     summary="Terminate user session",
-     *     description="Invalidates current session and removes authentication tokens",
-     *     tags={"Auth"},
-     *     security={{"bearerAuth": {}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Session successfully closed",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="success"),
-     *             @OA\Property(property="message", type="string", example="Session successfully ended")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Unauthorized",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="error"),
-     *             @OA\Property(property="message", type="string", example="Not authenticated")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=403,
-     *         description="Forbidden",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="error"),
-     *             @OA\Property(property="message", type="string", example="Inactive account")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=500,
-     *         description="Internal server error",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="error"),
-     *             @OA\Property(property="message", type="string", example="Could not terminate session")
-     *         )
-     *     )
-     * )
-     */
     public function signOut(EntityManagerInterface $entityManager): JsonResponse
     {
         /** @var \App\Entity\Users $thisuser */
@@ -550,27 +734,83 @@ class UsersController extends AbstractController
         return $this->json(['type' => 'success', 'message' => 'Session successfully ended'], Response::HTTP_OK);
     }
 
+    #[OA\Post(
+        path: '/api/users/tokenExisting',
+        summary: 'Check Remember Token',
+        description: 'Validate remember token from cookies and retrieve user data for auto-login',
+        tags: ['Users', 'Authentication']
+    )]
+    #[OA\Parameter(
+        name: 'rememberToken',
+        description: 'Remember token stored in HTTP-only cookie',
+        in: 'cookie',
+        required: false,
+        schema: new OA\Schema(type: 'string'),
+        example: 'a1b2c3d4e5f6...'
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Valid token - User data retrieved successfully',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'success'),
+                new OA\Property(property: 'message', type: 'string', example: 'Welcome back username123!!!'),
+                new OA\Property(
+                    property: 'userData',
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'this_user_id', type: 'integer', example: 1),
+                        new OA\Property(property: 'this_user_email', type: 'string', example: 'user@example.com'),
+                        new OA\Property(property: 'this_user_username', type: 'string', example: 'username123'),
+                        new OA\Property(property: 'this_user_role_id', type: 'integer', example: 2),
+                        new OA\Property(property: 'this_user_role', type: 'string', example: 'User'),
+                        new OA\Property(property: 'this_user_date_union', type: 'string', format: 'date-time')
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'No remember token found',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'info'),
+                new OA\Property(property: 'message', type: 'string', example: 'No remember token found')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Unauthorized - Invalid or expired token',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(property: 'message', type: 'string', example: 'Invalid or expired token')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 403,
+        description: 'Forbidden - Account not active',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(property: 'message', type: 'string', example: 'Account not active')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 500,
+        description: 'Internal Server Error',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(property: 'message', type: 'string', example: 'Error checking token')
+            ]
+        )
+    )]
     #[Route('/tokenExisting', name: 'app_tokenExisting', methods: ['POST'])]
-    /**
-     * @OA\Post(
-     *     path="/api/users/tokenExisting",
-     *     summary="Check persistent login token",
-     *     description="Verifies 'remember-me' token from cookies to restore user session",
-     *     tags={"Auth"},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Valid token found",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="success"),
-     *             @OA\Property(property="message", type="string", example="Welcome back fit_user123!")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=204,
-     *         description="No valid token found"
-     *     )
-     * )
-     */
     public function tokenExisting(EntityManagerInterface $entityManager, Request $request): JsonResponse
     {
         try {
@@ -628,61 +868,76 @@ class UsersController extends AbstractController
     }
 
     //!DEPENDIENDO DE LO QUE SE DIGA SE ÙEDE QUITAR PQ YA LO HACE modifyUser
+    #[OA\Delete(
+        path: '/api/users/deleteUser/{id}',
+        summary: 'Delete User',
+        description: 'Soft delete a user by setting status to deleted (Admin only)',
+        tags: ['Users', 'Administration']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        description: 'User ID to delete',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer', minimum: 1),
+        example: 1
+    )]
+    #[OA\Response(
+        response: 201,
+        description: 'User successfully deleted',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'success'),
+                new OA\Property(property: 'message', type: 'string', example: 'User successfully deleted')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Bad Request - User not found, insufficient permissions, or cannot delete admin',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'You are not an administrator',
+                        'The user does not exist',
+                        'Only root users can delete administrators'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Unauthorized - User not logged in or not active',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'You are not logged in',
+                        'You are not active'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 500,
+        description: 'Internal Server Error',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(property: 'message', type: 'string', example: 'An error occurred while deleting the user')
+            ]
+        )
+    )]
     #[Route('/deleteUser/{id<\d+>}', name: 'api_deleteUser', methods: ['DELETE'])]
-    /**
-     * @Route("/deleteUser/{id<\d+>}", name="api_deleteUser", methods={"DELETE"})
-     *
-     * @OA\Delete(
-     *     path="/deleteUser/{id}",
-     *     summary="Eliminar un usuario por ID",
-     *     description="Permite a los administradores eliminar (estado 'deleted') a un usuario existente por su ID. Solo accesible para usuarios autenticados con rol de administrador y estado activo.",
-     *     tags={"Users"},
-     *     security={{"bearerAuth": {}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         description="ID del usuario a eliminar",
-     *         @OA\Schema(type="integer", example=3)
-     *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Usuario eliminado correctamente",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="type", type="string", example="success"),
-     *             @OA\Property(property="message", type="string", example="User successfully deleted")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Datos incorrectos o no tiene permisos",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="type", type="string", example="error"),
-     *             @OA\Property(property="message", type="string", example="The user does not exist")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=403,
-     *         description="El usuario no está activo o no autorizado",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="type", type="string", example="error"),
-     *             @OA\Property(property="message", type="string", example="You are not active")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=500,
-     *         description="Error interno al intentar eliminar el usuario",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="type", type="string", example="error"),
-     *             @OA\Property(property="message", type="string", example="An error occurred while deleting the user")
-     *         )
-     *     )
-     * )
-     */
     public function deleteUser(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
         try {
@@ -728,71 +983,74 @@ class UsersController extends AbstractController
     }
 
     //!DEPENDIENDO DE LO QUE SE DIGA SE ÙEDE QUITAR PQ YA LO HACE modifyUser
+    #[OA\Put(
+        path: '/api/users/activeUser/{id}',
+        summary: 'Activate User',
+        description: 'Activate a user by setting their status to active. Only administrators can perform this action.',
+        tags: ['Users', 'Administration']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        description: 'User ID to activate',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer', minimum: 1, example: 1)
+    )]
+    #[OA\Response(
+        response: 201,
+        description: 'User successfully activated',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'success'),
+                new OA\Property(property: 'message', type: 'string', example: 'User successfully activated')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Bad Request - Permission denied or user not found',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', enum: ['error']),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'You are not an administrator',
+                        'The user does not exist'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Unauthorized - User not logged in or not active',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', enum: ['error']),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'You are not logged in',
+                        'You are not active'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 500,
+        description: 'Internal Server Error',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(property: 'message', type: 'string', example: 'An error occurred while activating the user')
+            ]
+        )
+    )]
     #[Route('/activeUser/{id<\d+>}', name: 'app_activeUser', methods: ['PUT'])]
-    /**
-     * @OA\Put(
-     *     path="/api/users/activeUser/{id}",
-     *     summary="Activate a user account",
-     *     description="Allows administrators to activate a pending user account",
-     *     tags={"Users"},
-     *     security={{"bearerAuth": {}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         description="ID of the user to activate",
-     *         @OA\Schema(type="integer", example=123)
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="User activated successfully",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="success"),
-     *             @OA\Property(property="message", type="string", example="User successfully activated")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Unauthorized",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="error"),
-     *             @OA\Property(property="message", type="string", example="Authentication required")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=403,
-     *         description="Forbidden",
-     *         @OA\JsonContent(
-     *             oneOf={
-     *                 @OA\Schema(
-     *                     @OA\Property(property="type", type="string", example="error"),
-     *                     @OA\Property(property="message", type="string", example="Insufficient privileges")
-     *                 ),
-     *                 @OA\Schema(
-     *                     @OA\Property(property="type", type="string", example="error"),
-     *                     @OA\Property(property="message", type="string", example="Account not active")
-     *                 )
-     *             }
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="User not found",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="error"),
-     *             @OA\Property(property="message", type="string", example="User not found")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=500,
-     *         description="Internal server error",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="error"),
-     *             @OA\Property(property="message", type="string", example="Could not activate user")
-     *         )
-     *     )
-     * )
-     */
     public function activeUser(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
         try {
@@ -832,18 +1090,229 @@ class UsersController extends AbstractController
         }
     }
 
+    #[OA\Get(
+        path: '/api/users/modifyUser/{id}',
+        summary: 'Get User Data for Modification',
+        description: 'Retrieve user data along with available roles and status options for modification. Requires authentication and proper permissions.',
+        tags: ['Users', 'Administration']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        description: 'User ID to retrieve data for modification',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer', minimum: 1, example: 1)
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'User data retrieved successfully',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'id_usr', type: 'integer', example: 1),
+                new OA\Property(property: 'username', type: 'string', example: 'username123'),
+                new OA\Property(property: 'description', type: 'string', example: 'User description', nullable: true),
+                new OA\Property(property: 'public', type: 'boolean', example: true),
+                new OA\Property(property: 'status', type: 'string', example: 'active'),
+                new OA\Property(property: 'role_id', type: 'integer', example: 2),
+                new OA\Property(property: 'role_name', type: 'string', example: 'ROLE_USER'),
+                new OA\Property(
+                    property: 'roles',
+                    type: 'array',
+                    items: new OA\Items(
+                        type: 'object',
+                        properties: [
+                            new OA\Property(property: 'id', type: 'integer', example: 1),
+                            new OA\Property(property: 'name', type: 'string', example: 'ROLE_ADMIN')
+                        ]
+                    )
+                ),
+                new OA\Property(
+                    property: 'types_status',
+                    type: 'array',
+                    items: new OA\Items(type: 'string'),
+                    example: ['active', 'deleted']
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Unauthorized - User not logged in or not active',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', enum: ['error']),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'You are not logged in',
+                        'You are not active',
+                        'The user does not exist'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Bad Request - Permission denied or invalid user',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', enum: ['error']),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'You cannot modify root users',
+                        'Only root users can modify administrators',
+                        'Only administrators users can modify coachs',
+                        'The user does not exist',
+                        'The user does not match'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Put(
+        path: '/api/users/modifyUser/{id}',
+        summary: 'Modify User',
+        description: 'Update user information including username, password, role, public status, and description. Requires authentication and proper permissions.',
+        tags: ['Users', 'Administration']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        description: 'User ID to modify',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer', minimum: 1, example: 1)
+    )]
+    #[OA\RequestBody(
+        description: 'User modification data',
+        required: true,
+        content: new OA\JsonContent(
+            required: ['username', 'role_id', 'public', 'status'],
+            properties: [
+                new OA\Property(
+                    property: 'username',
+                    type: 'string',
+                    description: 'Username (5-20 chars, alphanumeric lowercase only)',
+                    pattern: '^[a-z0-9]{5,20}$',
+                    example: 'newusername'
+                ),
+                new OA\Property(
+                    property: 'password',
+                    type: 'string',
+                    description: 'New password (optional, min 5 chars, must contain: uppercase, lowercase, number, special character)',
+                    example: 'NewPassword123!',
+                    nullable: true
+                ),
+                new OA\Property(
+                    property: 'role_id',
+                    type: 'integer',
+                    description: 'Role ID (only admins/root can modify roles)',
+                    example: 2
+                ),
+                new OA\Property(
+                    property: 'public',
+                    type: 'boolean',
+                    description: 'Whether user profile is public',
+                    example: true
+                ),
+                new OA\Property(
+                    property: 'status',
+                    type: 'string',
+                    description: 'User status',
+                    enum: ['active', 'deleted'],
+                    example: 'active'
+                ),
+                new OA\Property(
+                    property: 'description',
+                    type: 'string',
+                    description: 'User description (optional, 5-500 chars, alphanumeric and spaces)',
+                    pattern: '^[a-zA-Z0-9\\s]{5,500}$',
+                    example: 'This is my user description',
+                    nullable: true
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 201,
+        description: 'User successfully updated',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'success'),
+                new OA\Property(property: 'message', type: 'string', example: 'User successfully updated')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Bad Request - Invalid data, validation errors, or permission denied',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', enum: ['error']),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'Invalid data',
+                        'Invalid username format',
+                        'User already exists',
+                        'Invalid password format',
+                        'Invalid description format',
+                        'Only root users can modify administrators',
+                        'Only administrators users can modify coachs',
+                        'Invalid role',
+                        'Only root users can modify the role of administrators.',
+                        'Invalid status',
+                        'You cannot modify root users',
+                        'The user does not exist',
+                        'The user does not match'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Unauthorized - User not logged in or not active',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', enum: ['error']),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'You are not logged in',
+                        'You are not active',
+                        'The user does not exist'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 405,
+        description: 'Method Not Allowed',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(property: 'message', type: 'string', example: 'Method not allowed')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 500,
+        description: 'Internal Server Error',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(property: 'message', type: 'string', example: 'An error occurred while modifying the user')
+            ]
+        )
+    )]
     #[Route('/modifyUser/{id<\d+>}', name: 'api_modifyUser', methods: ['PUT', 'GET'])]
-    /**
-     * @OA\PathItem(
-     *     path="/api/users/modifyUser/{id}",
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     )
-     * )
-     */
     public function modifyUser(EntityManagerInterface $entityManager, Request $request, int $id,): JsonResponse
     {
         /** @var \App\Entity\Users $thisuser */
@@ -909,20 +1378,6 @@ class UsersController extends AbstractController
         $status = ['active', 'deleted'];
 
         if ($request->isMethod('GET')) {
-            /**
-             * @OA\Get(
-             *     summary="Get user data for modification",
-             *     tags={"Users"},
-             *     security={{"bearerAuth": {}}},
-             *     @OA\Response(
-             *         response=200,
-             *         description="User data and available roles",
-             *         @OA\JsonContent(ref="#/components/schemas/UserModificationData")
-             *     ),
-             *     @OA\Response(response=403, description="Forbidden"),
-             *     @OA\Response(response=404, description="User not found")
-             * )
-             */
             $data = [
                 'id_usr' => $user->getUserId(),
                 'username' => $user->getDisplayUsername(),
@@ -939,35 +1394,6 @@ class UsersController extends AbstractController
         }
 
         if ($request->isMethod('PUT')) {
-            /**
-             * @OA\Put(
-             *     summary="Update user data",
-             *     tags={"Users"},
-             *     security={{"bearerAuth": {}}},
-             *     @OA\RequestBody(
-             *         @OA\JsonContent(
-             *             @OA\Property(property="username", type="string", minLength=5, maxLength=20),
-             *             @OA\Property(property="password", type="string", nullable=true),
-             *             @OA\Property(property="description", type="string", nullable=true, maxLength=500),
-             *             @OA\Property(property="public", type="boolean"),
-             *             @OA\Property(property="status", type="string", enum={"active", "deleted"}),
-             *             @OA\Property(property="role_id", type="integer")
-             *         )
-             *     ),
-             *     @OA\Response(
-             *         response=200,
-             *         description="User updated successfully",
-             *         @OA\JsonContent(
-             *             @OA\Property(property="type", type="string", example="success"),
-             *             @OA\Property(property="message", type="string", example="User updated")
-             *         )
-             *     ),
-             *     @OA\Response(response=400, description="Validation error"),
-             *     @OA\Response(response=403, description="Forbidden"),
-             *     @OA\Response(response=404, description="User not found"),
-             *     @OA\Response(response=500, description="Internal error")
-             * )
-             */
             try {
                 $data = json_decode($request->getContent(), true);
 
@@ -1061,46 +1487,57 @@ class UsersController extends AbstractController
         return $this->json(['type' => 'error', 'message' => 'Method not allowed'], Response::HTTP_METHOD_NOT_ALLOWED);
     }
 
+    #[OA\Get(
+        path: '/api/users/whoami',
+        summary: 'Get Current User Information',
+        description: 'Retrieve basic information about the currently authenticated user including ID, username, and role',
+        tags: ['Users', 'Authentication']
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Current user information retrieved successfully',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(
+                    property: 'ID',
+                    type: 'integer',
+                    description: 'User unique identifier',
+                    example: 1
+                ),
+                new OA\Property(
+                    property: 'USERNAME',
+                    type: 'string',
+                    description: 'User display username',
+                    example: 'username123'
+                ),
+                new OA\Property(
+                    property: 'ROLE',
+                    type: 'string',
+                    description: 'User role in the system',
+                    enum: ['ROLE_ROOT', 'ROLE_ADMIN', 'ROLE_COACH', 'ROLE_USER'],
+                    example: 'ROLE_USER'
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Unauthorized - User not logged in or not active',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', enum: ['error']),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'You are not logged in',
+                        'You are not active'
+                    ]
+                )
+            ]
+        )
+    )]
     #[Route('/whoami', name: 'app_whoami', methods: ['GET'])]
-    /**
-     * @Route("/whoami", name="api_whoami", methods={"GET"})
-     *
-     * @OA\Get(
-     *     path="/whoami",
-     *     summary="Obtener información del usuario autenticado",
-     *     description="Devuelve el ID, nombre de usuario y rol del usuario actualmente autenticado si está activo.",
-     *     tags={"Users"},
-     *     security={{"bearerAuth": {}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Información del usuario obtenida con éxito",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="ID", type="integer", example=5),
-     *             @OA\Property(property="USERNAME", type="string", example="juanito98"),
-     *             @OA\Property(property="ROLE", type="string", example="ROLE_USER")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="El usuario no está logueado",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="type", type="string", example="error"),
-     *             @OA\Property(property="message", type="string", example="You are not logged")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=403,
-     *         description="El usuario no está activo",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="type", type="string", example="error"),
-     *             @OA\Property(property="message", type="string", example="You are not active")
-     *         )
-     *     )
-     * )
-     */
     public function whoami(EntityManagerInterface $entityManager): JsonResponse
     {
         /** @var \App\Entity\Users $thisuser */
@@ -1126,67 +1563,68 @@ class UsersController extends AbstractController
         ]);
     }
 
+    #[OA\Post(
+        path: '/api/users/sendEmail',
+        summary: 'Send Activation Email',
+        description: 'Send verification email to user with activation code for pending accounts',
+        tags: ['Users', 'Authentication', 'Email']
+    )]
+    #[OA\RequestBody(
+        description: 'User email for activation',
+        required: true,
+        content: new OA\JsonContent(
+            required: ['email'],
+            properties: [
+                new OA\Property(
+                    property: 'email',
+                    type: 'string',
+                    format: 'email',
+                    description: 'User email address (must be valid email format, max 255 chars)',
+                    example: 'user@example.com'
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Email sent successfully',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'success'),
+                new OA\Property(property: 'message', type: 'string', example: 'Email sent successfully')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Bad Request - Invalid data, format, user not found, or user already active',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'Invalid data',
+                        'Invalid email format',
+                        'The user does not exist',
+                        'The user is already active'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 500,
+        description: 'Internal Server Error',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(property: 'message', type: 'string', example: 'Error message details...')
+            ]
+        )
+    )]
     #[Route('/sendEmail', name: 'app_activeUser', methods: ['POST'])]
-    /**
-     * @OA\Post(
-     *     path="/api/users/sendEmail",
-     *     summary="Send verification email",
-     *     description="Sends account activation email with verification code",
-     *     tags={"Auth"},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"email"},
-     *             @OA\Property(
-     *                 property="email", 
-     *                 type="string", 
-     *                 format="email", 
-     *                 example="user@example.com"
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Verification email sent",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="success"),
-     *             @OA\Property(property="message", type="string", example="Verification email sent successfully")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Validation error",
-     *         @OA\JsonContent(
-     *             oneOf={
-     *                 @OA\Schema(
-     *                     @OA\Property(property="type", type="string", example="error"),
-     *                     @OA\Property(property="message", type="string", example="Invalid email format")
-     *                 ),
-     *                 @OA\Schema(
-     *                     @OA\Property(property="type", type="string", example="error"),
-     *                     @OA\Property(property="message", type="string", example="User already active")
-     *                 )
-     *             }
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="User not found",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="error"),
-     *             @OA\Property(property="message", type="string", example="User not found")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=500,
-     *         description="Email sending failed",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="error"),
-     *             @OA\Property(property="message", type="string", example="Failed to send verification email")
-     *         )
-     *     )
-     * )
-     */
     public function sendEmail(EntityManagerInterface $entityManager, MailerInterface $mailer, Request $request): JsonResponse
     {
         try {
@@ -1269,67 +1707,68 @@ class UsersController extends AbstractController
         }
     }
 
+    #[OA\Post(
+        path: '/api/users/checkCode',
+        summary: 'Verify Activation Code',
+        description: 'Verify user activation code and activate pending user account',
+        tags: ['Users', 'Authentication', 'Verification']
+    )]
+    #[OA\RequestBody(
+        description: 'Verification code for account activation',
+        required: true,
+        content: new OA\JsonContent(
+            required: ['verificationCode'],
+            properties: [
+                new OA\Property(
+                    property: 'verificationCode',
+                    type: 'integer',
+                    description: 'User verification code (6-digit number between 100000-999999)',
+                    example: 123456,
+                    minimum: 100000,
+                    maximum: 999999
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 201,
+        description: 'User successfully activated',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'success'),
+                new OA\Property(property: 'message', type: 'string', example: 'User successfully activated')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Bad Request - Invalid data, format, or verification code',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    enum: [
+                        'Invalid data',
+                        'Invalid verification code format',
+                        'Invalid verification code'
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 500,
+        description: 'Internal Server Error',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'type', type: 'string', example: 'error'),
+                new OA\Property(property: 'message', type: 'string', example: 'An error has occurred with the verification code')
+            ]
+        )
+    )]
     #[Route('/checkCode', name: 'api_checkCode', methods: ['POST'])]
-    /**
-     * @OA\Post(
-     *     path="/api/users/checkCode",
-     *     summary="Verify activation code",
-     *     description="Validates user's verification code to activate account",
-     *     tags={"Auth"},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"verificationCode"},
-     *             @OA\Property(
-     *                 property="verificationCode",
-     *                 type="string",
-     *                 pattern="^\d{6}$",
-     *                 example="123456"
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Account activated successfully",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="success"),
-     *             @OA\Property(property="message", type="string", example="Account activated successfully")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Invalid code format",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="error"),
-     *             @OA\Property(property="message", type="string", example="Invalid code format")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Invalid verification code",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="error"),
-     *             @OA\Property(property="message", type="string", example="Invalid verification code")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=409,
-     *         description="Account already active",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="warning"),
-     *             @OA\Property(property="message", type="string", example="Account is already active")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=500,
-     *         description="Internal server error",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="type", type="string", example="error"),
-     *             @OA\Property(property="message", type="string", example="Could not verify code")
-     *         )
-     *     )
-     * )
-     */
     public function checkCode(EntityManagerInterface $entityManager, Request $request): JsonResponse
     {
         try {
