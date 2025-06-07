@@ -8,6 +8,7 @@ use App\Service\CoachService;
 use App\Service\FavoritesExercisesService;
 use App\Service\FavouritesCoachsService;
 use App\Service\GlobalService;
+use App\Service\LikesCoachsService;
 use App\Service\RoleService;
 use App\Service\UserService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -31,7 +32,8 @@ class UsersController extends AbstractController
         private FavoritesExercisesService $favoriteExercisesService,
         private RoleService $roleService,
         private FavouritesCoachsService $favouritesCoachsService,
-        private CoachService $coachService
+        private CoachService $coachService,
+        private LikesCoachsService $likesCoachsService
     ) {}
 
     //!CON JS AL DEVOLVER UN JSON CON EL active SE PUEDE FILTAR EN EL FRONT POR active SIN NECESIDAD DE CREAR UN METODO DE seeAllActiveUsers Y QUITARNIOS EL RECARGAR LA PÁGINA PUDIENDIO HACER UN Switches PARA ALTERNAR ENTRE ACTIVOS O TODOS
@@ -274,6 +276,7 @@ class UsersController extends AbstractController
 
         if ($thisuserRole === "ROLE_COACH" || $user->getRole()->getName() === "ROLE_COACH") {
             $coachsExercises = $this->coachService->seeAllExercisesByCoach($entityManager, $id);
+            $likes = $this->likesCoachsService->getCoachsLikes($entityManager, $id);
 
             $exerciseList = [];
 
@@ -294,6 +297,7 @@ class UsersController extends AbstractController
                 'username' => $user->getDisplayUsername(),
                 'description' => $user->getDescription(),
                 'date_union' => $user->getDateUnion(),
+                'likes' =>  $likes,
                 'exercises' => $exerciseList,
             ];
         } else {
