@@ -278,11 +278,13 @@ class UsersController extends AbstractController
             $exerciseList = [];
 
             foreach ($coachsExercises as $exercise) {
+                $likes = $likes = $exercise->getExerciseLikes()?->getLikes();
                 $exerciseList[] = [
                     'exercise_id' => $exercise->getExerciseId(),
                     'exercise_name' => $exercise->getName(),
                     'exercise_description' => $exercise->getDescription(),
                     'exercise_category' => $exercise->getCategory()->getName(),
+                    'likes' => $likes
                 ];
             }
 
