@@ -434,7 +434,7 @@ class UsersController extends AbstractController
                 return $this->json(['type' => 'error', 'message' => 'Passwords dont match'], Response::HTTP_BAD_REQUEST);
             }
 
-            $role = $entityManager->find(Roles::class, 3);
+            $role = $entityManager->find(Roles::class, 4);
 
             $newUser = new Users();
 

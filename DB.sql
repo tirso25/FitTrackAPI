@@ -232,14 +232,26 @@ BEGIN
     VALUES (NEW.exercise_id, 0);
 END;
 
+-- CREATE TRIGGER trg_increment_likes_on_favorite_add
+-- AFTER INSERT ON favorites_exercises
+-- FOR EACH ROW
+-- BEGIN
+--     UPDATE likes_exercises
+--     SET likes = likes + 1
+--     WHERE exercise_id = NEW.exercise_id;
+-- END;
+
 CREATE TRIGGER trg_increment_likes_on_favorite_add
 AFTER INSERT ON favorites_exercises
 FOR EACH ROW
 BEGIN
-    UPDATE likes_exercises
-    SET likes = likes + 1
-    WHERE exercise_id = NEW.exercise_id;
+    IF NEW.active = TRUE THEN
+        UPDATE likes_exercises
+        SET likes = likes + 1
+        WHERE exercise_id = NEW.exercise_id;
+    END IF;
 END;
+
 
 CREATE TRIGGER trg_decrement_likes_on_favorite_remove
 AFTER DELETE ON favorites_exercises
