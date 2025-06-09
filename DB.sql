@@ -223,14 +223,14 @@ INSERT INTO categories (name) VALUES
   ('QUADRICEPS'),
   ('CALVES')
 
--- Triggers para gestión de likes
-CREATE TRIGGER trg_initialize_likes_counter
-AFTER INSERT ON exercises
-FOR EACH ROW
-BEGIN
-    INSERT INTO likes_exercises (exercise_id, likes) 
-    VALUES (NEW.exercise_id, 0);
-END;
+-- -- Triggers para gestión de likes
+-- CREATE TRIGGER trg_initialize_likes_counter
+-- AFTER INSERT ON exercises
+-- FOR EACH ROW
+-- BEGIN
+--     INSERT INTO likes_exercises (exercise_id, likes) 
+--     VALUES (NEW.exercise_id, 0);
+-- END;
 
 -- CREATE TRIGGER trg_increment_likes_on_favorite_add
 -- AFTER INSERT ON favorites_exercises
@@ -241,120 +241,108 @@ END;
 --     WHERE exercise_id = NEW.exercise_id;
 -- END;
 
-CREATE TRIGGER trg_increment_likes_on_favorite_add
-AFTER INSERT ON favorites_exercises
-FOR EACH ROW
-BEGIN
-    IF NEW.active = TRUE THEN
-        UPDATE likes_exercises
-        SET likes = likes + 1
-        WHERE exercise_id = NEW.exercise_id;
-    END IF;
-END;
+-- CREATE TRIGGER trg_decrement_likes_on_favorite_remove
+-- AFTER DELETE ON favorites_exercises
+-- FOR EACH ROW
+-- BEGIN
+--     UPDATE likes_exercises
+--     SET likes = likes - 1
+--     WHERE exercise_id = OLD.exercise_id;
+-- END;
 
-
-CREATE TRIGGER trg_decrement_likes_on_favorite_remove
-AFTER DELETE ON favorites_exercises
-FOR EACH ROW
-BEGIN
-    UPDATE likes_exercises
-    SET likes = likes - 1
-    WHERE exercise_id = OLD.exercise_id;
-END;
-
--- Triggers para cambios de estado en favorites_exercises
-CREATE TRIGGER trg_handle_likes_on_favorite_activation
-AFTER UPDATE ON favorites_exercises
-FOR EACH ROW
-BEGIN
-    -- Cuando se activa un favorito
-    IF OLD.active = FALSE AND NEW.active = TRUE THEN
-        UPDATE likes_exercises
-        SET likes = likes + 1
-        WHERE exercise_id = OLD.exercise_id;
+-- -- Triggers para cambios de estado en favorites_exercises
+-- CREATE TRIGGER trg_handle_likes_on_favorite_activation
+-- AFTER UPDATE ON favorites_exercises
+-- FOR EACH ROW
+-- BEGIN
+--     -- Cuando se activa un favorito
+--     IF OLD.active = FALSE AND NEW.active = TRUE THEN
+--         UPDATE likes_exercises
+--         SET likes = likes + 1
+--         WHERE exercise_id = OLD.exercise_id;
     
-    -- Cuando se desactiva un favorito
-    ELSEIF OLD.active = TRUE AND NEW.active = FALSE THEN
-        UPDATE likes_exercises
-        SET likes = likes - 1
-        WHERE exercise_id = OLD.exercise_id;
-    END IF;
-END;
+--     -- Cuando se desactiva un favorito
+--     ELSEIF OLD.active = TRUE AND NEW.active = FALSE THEN
+--         UPDATE likes_exercises
+--         SET likes = likes - 1
+--         WHERE exercise_id = OLD.exercise_id;
+--     END IF;
+-- END;
 
--- Triggers para sincronización/cambios con usuarios
-CREATE TRIGGER trg_sync_favorites_on_user_status_change
-AFTER UPDATE ON users
-FOR EACH ROW
-BEGIN
-    -- Cuando un usuario es marcado como eliminado
-    IF NEW.status = 'deleted' AND OLD.status != 'deleted' THEN
-        -- Desactivar todos sus favoritos
-        UPDATE favorites_exercises
-        SET active = FALSE
-        WHERE user_id = NEW.user_id;
+-- -- Triggers para sincronización/cambios con usuarios
+-- CREATE TRIGGER trg_sync_favorites_on_user_status_change
+-- AFTER UPDATE ON users
+-- FOR EACH ROW
+-- BEGIN
+--     -- Cuando un usuario es marcado como eliminado
+--     IF NEW.status = 'deleted' AND OLD.status != 'deleted' THEN
+--         -- Desactivar todos sus favoritos
+--         UPDATE favorites_exercises
+--         SET active = FALSE
+--         WHERE user_id = NEW.user_id;
         
-        -- Actualizar contadores de likes
-        UPDATE likes_exercises le
-        JOIN favorites_exercises fe ON le.exercise_id = fe.exercise_id
-        SET le.likes = le.likes - 1
-        WHERE fe.user_id = NEW.user_id AND fe.active = TRUE;
+--         -- Actualizar contadores de likes
+--         UPDATE likes_exercises le
+--         JOIN favorites_exercises fe ON le.exercise_id = fe.exercise_id
+--         SET le.likes = le.likes - 1
+--         WHERE fe.user_id = NEW.user_id AND fe.active = TRUE;
     
-    -- Cuando un usuario es reactivado
-    ELSEIF NEW.status = 'active' AND OLD.status = 'deleted' THEN
-        -- Reactivar favoritos donde el ejercicio esté activo
-        UPDATE favorites_exercises fe
-        JOIN exercises e ON fe.exercise_id = e.exercise_id
-        SET fe.active = TRUE
-        WHERE fe.user_id = NEW.user_id AND e.active = TRUE;
+--     -- Cuando un usuario es reactivado
+--     ELSEIF NEW.status = 'active' AND OLD.status = 'deleted' THEN
+--         -- Reactivar favoritos donde el ejercicio esté activo
+--         UPDATE favorites_exercises fe
+--         JOIN exercises e ON fe.exercise_id = e.exercise_id
+--         SET fe.active = TRUE
+--         WHERE fe.user_id = NEW.user_id AND e.active = TRUE;
         
-        -- Actualizar contadores de likes
-        UPDATE likes_exercises le
-        JOIN favorites_exercises fe ON le.exercise_id = fe.exercise_id
-        JOIN exercises e ON fe.exercise_id = e.exercise_id
-        SET le.likes = le.likes + 1
-        WHERE fe.user_id = NEW.user_id AND fe.active = TRUE AND e.active = TRUE;
-    END IF;
-END;
+--         -- Actualizar contadores de likes
+--         UPDATE likes_exercises le
+--         JOIN favorites_exercises fe ON le.exercise_id = fe.exercise_id
+--         JOIN exercises e ON fe.exercise_id = e.exercise_id
+--         SET le.likes = le.likes + 1
+--         WHERE fe.user_id = NEW.user_id AND fe.active = TRUE AND e.active = TRUE;
+--     END IF;
+-- END;
 
--- Triggers para sincronización/cambios con ejercicios
-CREATE TRIGGER trg_sync_favorites_on_exercise_status_change
-AFTER UPDATE ON exercises
-FOR EACH ROW
-BEGIN
-    -- Cuando un ejercicio es desactivado
-    IF NEW.active = FALSE AND OLD.active = TRUE THEN
-        UPDATE favorites_exercises
-        SET active = FALSE
-        WHERE exercise_id = NEW.exercise_id;
+-- -- Triggers para sincronización/cambios con ejercicios
+-- CREATE TRIGGER trg_sync_favorites_on_exercise_status_change
+-- AFTER UPDATE ON exercises
+-- FOR EACH ROW
+-- BEGIN
+--     -- Cuando un ejercicio es desactivado
+--     IF NEW.active = FALSE AND OLD.active = TRUE THEN
+--         UPDATE favorites_exercises
+--         SET active = FALSE
+--         WHERE exercise_id = NEW.exercise_id;
         
-        -- Actualizar contadores de likes
-        UPDATE likes_exercises
-        SET likes = likes - (
-            SELECT COUNT(*) 
-            FROM favorites_exercises 
-            WHERE exercise_id = NEW.exercise_id AND active = TRUE
-        )
-        WHERE exercise_id = NEW.exercise_id;
+--         -- Actualizar contadores de likes
+--         UPDATE likes_exercises
+--         SET likes = likes - (
+--             SELECT COUNT(*) 
+--             FROM favorites_exercises 
+--             WHERE exercise_id = NEW.exercise_id AND active = TRUE
+--         )
+--         WHERE exercise_id = NEW.exercise_id;
     
-    -- Cuando un ejercicio es reactivado
-    ELSEIF NEW.active = TRUE AND OLD.active = FALSE THEN
-        UPDATE favorites_exercises fe
-        JOIN users u ON fe.user_id = u.user_id
-        SET fe.active = TRUE
-        WHERE fe.exercise_id = NEW.exercise_id AND u.status = 'active';
+--     -- Cuando un ejercicio es reactivado
+--     ELSEIF NEW.active = TRUE AND OLD.active = FALSE THEN
+--         UPDATE favorites_exercises fe
+--         JOIN users u ON fe.user_id = u.user_id
+--         SET fe.active = TRUE
+--         WHERE fe.exercise_id = NEW.exercise_id AND u.status = 'active';
         
-        -- Actualizar contadores de likes
-        UPDATE likes_exercises
-        SET likes = likes + (
-            SELECT COUNT(*) 
-            FROM favorites_exercises fe
-            JOIN users u ON fe.user_id = u.user_id
-            WHERE fe.exercise_id = NEW.exercise_id 
-            AND u.status = 'active'
-        )
-        WHERE exercise_id = NEW.exercise_id;
-    END IF;
-END;
+--         -- Actualizar contadores de likes
+--         UPDATE likes_exercises
+--         SET likes = likes + (
+--             SELECT COUNT(*) 
+--             FROM favorites_exercises fe
+--             JOIN users u ON fe.user_id = u.user_id
+--             WHERE fe.exercise_id = NEW.exercise_id 
+--             AND u.status = 'active'
+--         )
+--         WHERE exercise_id = NEW.exercise_id;
+--     END IF;
+-- END;
 
 -- 1. CREAR REGISTRO EN LIKES_COACHS CUANDO UN USUARIO SE CONVIERTE EN ENTRENADOR
 CREATE TRIGGER trg_create_likes_coach_on_role_change
@@ -510,4 +498,156 @@ BEGIN
     
     -- Eliminar registro de likes si era entrenador
     DELETE FROM likes_coachs WHERE coach_id = OLD.user_id;
+END;
+
+
+
+
+
+
+
+
+
+-- Triggers para gestión de likes (VERSIÓN CORREGIDA)
+
+-- 1. Inicializar contador de likes cuando se crea un ejercicio
+CREATE TRIGGER trg_initialize_likes_counter
+AFTER INSERT ON exercises
+FOR EACH ROW
+BEGIN
+    INSERT INTO likes_exercises (exercise_id, likes) 
+    VALUES (NEW.exercise_id, 0);
+END;
+
+-- 2. Incrementar likes cuando se añade a favoritos
+CREATE TRIGGER trg_increment_likes_on_favorite_add
+AFTER INSERT ON favorites_exercises
+FOR EACH ROW
+BEGIN
+    -- Solo incrementar si el favorito se crea como activo
+    IF NEW.active = TRUE THEN
+        UPDATE likes_exercises
+        SET likes = likes + 1
+        WHERE exercise_id = NEW.exercise_id;
+    END IF;
+END;
+
+-- 3. Decrementar likes cuando se elimina de favoritos
+CREATE TRIGGER trg_decrement_likes_on_favorite_remove
+AFTER DELETE ON favorites_exercises
+FOR EACH ROW
+BEGIN
+    -- Solo decrementar si el favorito estaba activo
+    IF OLD.active = TRUE THEN
+        UPDATE likes_exercises
+        SET likes = likes - 1
+        WHERE exercise_id = OLD.exercise_id;
+    END IF;
+END;
+
+-- 4. Manejar cambios de estado en favorites_exercises
+CREATE TRIGGER trg_handle_likes_on_favorite_activation
+AFTER UPDATE ON favorites_exercises
+FOR EACH ROW
+BEGIN
+    -- Cuando se activa un favorito
+    IF OLD.active = FALSE AND NEW.active = TRUE THEN
+        UPDATE likes_exercises
+        SET likes = likes + 1
+        WHERE exercise_id = NEW.exercise_id;
+    
+    -- Cuando se desactiva un favorito
+    ELSEIF OLD.active = TRUE AND NEW.active = FALSE THEN
+        UPDATE likes_exercises
+        SET likes = likes - 1
+        WHERE exercise_id = NEW.exercise_id;
+    END IF;
+END;
+
+-- 5. Sincronizar favoritos cuando cambia el estado del usuario
+CREATE TRIGGER trg_sync_favorites_on_user_status_change
+AFTER UPDATE ON users
+FOR EACH ROW
+BEGIN
+    -- Cuando un usuario es marcado como eliminado
+    IF NEW.status = 'deleted' AND OLD.status != 'deleted' THEN
+        -- Decrementar likes por todos los favoritos activos del usuario
+        UPDATE likes_exercises
+        SET likes = likes - 1
+        WHERE exercise_id IN (
+            SELECT exercise_id 
+            FROM favorites_exercises 
+            WHERE user_id = NEW.user_id AND active = TRUE
+        );
+        
+        -- Desactivar todos sus favoritos
+        UPDATE favorites_exercises
+        SET active = FALSE
+        WHERE user_id = NEW.user_id;
+    
+    -- Cuando un usuario es reactivado
+    ELSEIF NEW.status = 'active' AND OLD.status = 'deleted' THEN
+        -- Reactivar favoritos donde el ejercicio esté activo
+        UPDATE favorites_exercises fe
+        JOIN exercises e ON fe.exercise_id = e.exercise_id
+        SET fe.active = TRUE
+        WHERE fe.user_id = NEW.user_id 
+        AND e.active = TRUE;
+        
+        -- Incrementar likes por los favoritos reactivados
+        UPDATE likes_exercises
+        SET likes = likes + 1
+        WHERE exercise_id IN (
+            SELECT fe.exercise_id
+            FROM favorites_exercises fe
+            JOIN exercises e ON fe.exercise_id = e.exercise_id
+            WHERE fe.user_id = NEW.user_id 
+            AND fe.active = TRUE 
+            AND e.active = TRUE
+        );
+    END IF;
+END;
+
+-- 6. Sincronizar favoritos cuando cambia el estado del ejercicio
+CREATE TRIGGER trg_sync_favorites_on_exercise_status_change
+AFTER UPDATE ON exercises
+FOR EACH ROW
+BEGIN
+    -- Cuando un ejercicio es desactivado
+    IF NEW.active = FALSE AND OLD.active = TRUE THEN
+        -- Actualizar contador restando los favoritos activos
+        UPDATE likes_exercises
+        SET likes = likes - (
+            SELECT COUNT(*) 
+            FROM favorites_exercises 
+            WHERE exercise_id = NEW.exercise_id AND active = TRUE
+        )
+        WHERE exercise_id = NEW.exercise_id;
+        
+        -- Desactivar todos los favoritos del ejercicio
+        UPDATE favorites_exercises
+        SET active = FALSE
+        WHERE exercise_id = NEW.exercise_id;
+    
+    -- Cuando un ejercicio es reactivado
+    ELSEIF NEW.active = TRUE AND OLD.active = FALSE THEN
+        -- Reactivar favoritos de usuarios activos
+        UPDATE favorites_exercises fe
+        JOIN users u ON fe.user_id = u.user_id
+        SET fe.active = TRUE
+        WHERE fe.exercise_id = NEW.exercise_id 
+        AND u.status = 'active';
+        
+        -- Actualizar contador sumando los favoritos reactivados
+        UPDATE likes_exercises
+        SET likes = likes + (
+            SELECT COUNT(*) 
+            FROM favorites_exercises fe
+            JOIN users u ON fe.user_id = u.user_id
+            WHERE fe.exercise_id = NEW.exercise_id 
+            AND fe.active = TRUE
+            AND u.status = 'active'
+        )
+        WHERE exercise_id = NEW.exercise_id;
+    END IF;
 END;

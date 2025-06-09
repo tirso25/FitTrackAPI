@@ -168,8 +168,8 @@ class ExercisesController extends AbstractController
         $description = $this->globalService->validate(trim(strtolower($data['description'] ?? "")));
         $category_id = (int)$this->globalService->validate($data['category_id'] ?? "");
 
-        $name_regex = "/^[a-z]{1,30}$/";
-        $description_regex = "/^[a-zA-Z0-9]{10,500}$/";
+        $name_regex = "/^[\p{L} ]{1,30}$/u";
+        $description_regex = "/^[\p{L}0-9\s,.;:()\"'¡!¿?%\-]{10,1000}$/u";
 
         if ($name === "" || $description === "" || $category_id === "") {
             return $this->json(['type' => 'error', 'message' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
@@ -179,7 +179,7 @@ class ExercisesController extends AbstractController
             return $this->json(['type' => 'error', 'message' => 'Invalid name format'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (preg_match($description_regex, $description)) {
+        if (!preg_match($description_regex, $description)) {
             return $this->json(['type' => 'error', 'message' => 'Invalid description format'], Response::HTTP_BAD_REQUEST);
         }
 
